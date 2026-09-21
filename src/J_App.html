@@ -1,0 +1,36 @@
+<script>
+// SIDOKUMEN - J_App.html (v1.0 full piramida 35 output — 11 sheet + 87 handler + Drive + UIUX v1.10)
+var SidokumenMixin = {
+  data: function(){ return Object.assign({}, window.SidokumenState.data()); },
+  computed: Object.assign({}, window.SidokumenState.computed),
+  methods: Object.assign({}, window.SidokumenHelpers.methods, window.SidokumenApi.methods, window.SidokumenActions.methods)
+};
+var app = AppCore.create({
+  appCode:'SIDOKUMEN',
+  appTitle:'SIDOKUMEN v1.5 full',
+  initialPage:'dashboard',
+  storagePrefix:'sidokumen',
+  platformUrl:'https://script.google.com/macros/s/AKfycbwh_OUVqmxLcuF81FHmPZtT33Wrm8Ce9Da1SQ3hfkSr7gM5P8ofyAlHSgW40mq3eo-PoQ/exec',
+  brand:{ title:'SIDOKUMEN v1.5 full', subtitle:'35 output — Laporan 12 + Analisa 10 + Evaluasi 8 + RTL 5', logoIcon:'fa-solid fa-folder-tree', logoChar:'SD', logoSvg:'' },
+  menu:[
+    { name:'Utama', items:[{ id:'dashboard', label:'Dashboard', icon:'fa-solid fa-gauge-high' },{ id:'dokumen', label:'Dokumen', icon:'fa-solid fa-file-lines' },{ id:'laporan', label:'Laporan', icon:'fa-solid fa-file-lines' }] },
+    { name:'Analisa', items:[{ id:'analisa', label:'Analisa', icon:'fa-solid fa-chart-line' },{ id:'evaluasi', label:'Evaluasi', icon:'fa-solid fa-clipboard-check' },{ id:'rtl', label:'RTL', icon:'fa-solid fa-list-check' }] },
+    { name:'Master', items:[{ id:'master', label:'Jenis Dokumen', icon:'fa-solid fa-tags' }] },
+    { name:'Sistem', items:[{ id:'pengaturan', label:'Pengaturan', icon:'fa-solid fa-gear', adminOnly:true }] }
+  ],
+  pageIcons:{ dashboard:'fa-solid fa-gauge-high', dokumen:'fa-solid fa-file-lines', laporan:'fa-solid fa-file-lines', analisa:'fa-solid fa-chart-line', evaluasi:'fa-solid fa-clipboard-check', rtl:'fa-solid fa-list-check', master:'fa-solid fa-tags', pengaturan:'fa-solid fa-gear' },
+  onNavigate: function(vm, page){
+    if(page==='dashboard') vm.loadAll();
+    if(page==='dokumen'){ if(!vm.dokumenLoading) vm.loadDokumen(1); }
+    if(page==='laporan'){ if(!vm.lapKlasData) vm.loadRekapKlasifikasi(); if(!vm.lapPegawaiData) vm.loadRekapPegawai(); }
+    if(page==='analisa'){ if(!vm.analisaUnitData) vm.loadAnalisa(); }
+    if(page==='evaluasi'){ if(!vm.evaluasiSlaVerifData) vm.loadEvaluasi(); }
+    if(page==='rtl'){ if(!vm.rtlList.length) vm.loadRtl(1); }
+    if(page==='master'){ if(!vm.jenisList.length) vm.loadJenis(); }
+  },
+  initApp: async function(vm){ if(vm.dataLoaded) return; await vm.loadAll(true); vm.dataLoaded=true; },
+  mixins:[SidokumenMixin]
+});
+app.mount('#app');
+</script>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3eae9182e80fe07',t:'MTc5MDAxMzAwOA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
