@@ -491,10 +491,36 @@ function getDashboard_(actor) {
   return { success: true, data: { totalDokumen: totalDokumen, totalBaru: totalBaru, totalDisetujui: totalDisetujui, pctLengkap: pctLengkap, totalPegawai: totalPegawai, totalJenis: jenisAktif, tahun: tahun, role: (actor && actor.role) || 'viewer', nama: (actor && actor.display_name) || '' } };
 }
 
-// ==================== §7 INIT DATABASE ====================
+// ==================== §7 INIT DATABASE v1.5 fix — pastikan M_KATEGORI_DOKUMEN & M_PERIODE kebuat lokal ====================
+function ensureLocalSheets_() {
+  var ss = CoreLib.getDb(SPREADSHEET_ID);
+  if (!ss) return;
+  var localNames = Object.keys(LOCAL_SHEETS).map(function(k){ return LOCAL_SHEETS[k]; }).filter(function(v,i,a){ return a.indexOf(v)===i; });
+  localNames.forEach(function(name){
+    if (name === 'T_RTL') name = 'T_TINDAK_LANJUT';
+    var sh = ss.getSheetByName(name);
+    var headers = ALL_SHEET_HEADERS[name] || ALL_SHEET_HEADERS[name.toUpperCase()];
+    if (!sh) {
+      sh = ss.insertSheet(name);
+      if (headers && headers.length) sh.getRange(1,1,1,headers.length).setValues([headers]);
+      Logger.log('[init] Created sheet ' + name);
+    } else {
+      // pastikan header baris 1 ada bila kosong
+      try {
+        if (headers && headers.length) {
+          var lastCol = sh.getLastColumn();
+          if (lastCol === 0) sh.getRange(1,1,1,headers.length).setValues([headers]);
+        }
+      } catch(e){}
+    }
+  });
+}
 function initDatabase(actor) {
   try {
+    // CoreLib init dulu
     var result = CoreLib.initDatabase(SPREADSHEET_ID, ALL_SHEET_HEADERS, isRefSheet_);
+    // Fix: pastikan semua LOCAL_SHEETS ada (bug isRef lama bikin M_KATEGORI & M_PERIODE tidak kebuat)
+    ensureLocalSheets_();
     // seed M_JENIS_DOKUMEN
     var seedJenis = [
       { kode: 'PK', nama: 'Perjanjian Kinerja', kategori: 'KINERJA_UTAMA', periode: 'Tahunan', urutan: 1, status_aktif: 'true', keterangan: 'PK tahunan' },
@@ -508,7 +534,8 @@ function initDatabase(actor) {
       { kode: 'IKI', nama: 'Indikator Kinerja Individu', kategori: 'KINERJA_UTAMA', periode: 'Tahunan', urutan: 9, status_aktif: 'true', keterangan: 'IKI' },
       { kode: 'SKP_LAIN', nama: 'Dokumen Lainnya', kategori: 'LAINNYA', periode: 'Fleksibel', urutan: 10, status_aktif: 'true', keterangan: 'Lainnya' }
     ];
-    var existingJenis = getSheetData_('M_JENIS_DOKUMEN');
+    var existingJenis = [];
+    try { existingJenis = getSheetData_('M_JENIS_DOKUMEN'); } catch(e){ existingJenis = []; }
     if (existingJenis.length === 0) {
       seedJenis.forEach(function (j) { try { saveRecord_('M_JENIS_DOKUMEN', j, actor); } catch (e) {} });
     }
@@ -519,12 +546,23 @@ function initDatabase(actor) {
       { kode: 'LAPORAN', nama: 'Laporan', urutan: 4, status_aktif: 'true' },
       { kode: 'LAINNYA', nama: 'Lainnya', urutan: 5, status_aktif: 'true' }
     ];
-    var existingKat = getSheetData_('M_KATEGORI_DOKUMEN');
+    var existingKat = [];
+    try { existingKat = getSheetData_('M_KATEGORI_DOKUMEN'); } catch(e){ existingKat = []; }
     if (existingKat.length === 0) {
       seedKategori.forEach(function (k) { try { saveRecord_('M_KATEGORI_DOKUMEN', k, actor); } catch (e) {} });
     }
-    audit_(actor, 'INIT_DB', 'SYSTEM', 'ALL', true, 'Init DB SIDOKUMEN v1.0 — 11 sheet + seed 10 jenis + 5 kategori');
+    var seedPeriode = [
+      { tahun: '2024', label: '2024', status_aktif: 'true' },
+      { tahun: '2025', label: '2025', status_aktif: 'true' },
+      { tahun: '2026', label: '2026', status_aktif: 'true' }
+    ];
+    var existingPer = [];
+    try { existingPer = getSheetData_('M_PERIODE'); } catch(e){ existingPer = []; }
+    if (existingPer.length === 0) {
+      seedPeriode.forEach(function (p) { try { saveRecord_('M_PERIODE', p, actor); } catch (e) {} });
+    }
+    try { audit_(actor, 'INIT_DB', 'SYSTEM', 'ALL', true, 'Init DB SIDOKUMEN v1.5 full — 11 sheet + seed 10 jenis + 5 kategori + 3 periode + fix M_KATEGORI/M_PERIODE'); } catch(e){}
     return { success: true, data: result };
-  } catch (e) { return { success: false, code: 'BAD_REQUEST', error: e.message }; }
+  } catch (e) { return { success: false, code: 'BAD_REQUEST', error: e.message + ' ' + e.stack }; }
 }
 function setupApp(actor) { return initDatabase(actor); }
