@@ -1,0 +1,71 @@
+<!-- SIDOKUMEN - V_Analisa.html (v1.6 full — A3-A10 full + UIUX v1.10) -->
+<section v-if="currentPage === 'analisa'" class="space-y-6 animate-fade-in">
+  <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-3">
+    <div>
+      <h2 class="text-2xl font-bold tracking-tight flex items-center gap-2 text-slate-800 dark:text-white">
+        <i class="fa-solid fa-chart-line text-emerald-600 dark:text-emerald-400"></i> Analisa — 10 Output
+      </h2>
+      <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">A3 Distribusi Unit, A4 Top Pengumpul, A5 Beban Verifikator, A6 Retensi 5yr, A7 Korelasi Jenis×Unit, A8 TTE 0%, A9 SLA Pejabat, A10 Kritis Bulanan</p>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+    <button class="btn" :class="analisaTab==='unit' ? 'btn-primary' : 'btn-ghost'" @click="analisaTab='unit'">A3 Unit</button>
+    <button class="btn" :class="analisaTab==='top' ? 'btn-primary' : 'btn-ghost'" @click="analisaTab='top'">A4 Top</button>
+    <button class="btn" :class="analisaTab==='beban' ? 'btn-primary' : 'btn-ghost'" @click="analisaTab='beban'">A5 Beban</button>
+    <button class="btn" :class="analisaTab==='sla' ? 'btn-primary' : 'btn-ghost'" @click="analisaTab='sla'">A9 SLA</button>
+  </div>
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+    <button class="btn" :class="analisaTab==='retensi' ? 'btn-primary' : 'btn-ghost'" @click="analisaTab='retensi'">A6 Retensi</button>
+    <button class="btn" :class="analisaTab==='korelasi' ? 'btn-primary' : 'btn-ghost'" @click="analisaTab='korelasi'">A7 Korelasi</button>
+    <button class="btn" :class="analisaTab==='tte' ? 'btn-primary' : 'btn-ghost'" @click="analisaTab='tte'">A8 TTE</button>
+    <button class="btn" :class="analisaTab==='kritis' ? 'btn-primary' : 'btn-ghost'" @click="analisaTab='kritis'">A10 Kritis</button>
+  </div>
+
+  <div class="card space-y-4">
+    <div class="filter-bar-analytics"><h3 class="font-bold mr-auto"><i class="fa-solid fa-calendar text-emerald-500"></i> Periode Analisa</h3><div class="w-28"><label class="filter-label">Tahun</label><input type="text" class="input w-full" v-model="analisaTahun"></div><button class="btn btn-primary" @click="loadAnalisa()"><i class="fa-solid fa-rotate"></i> Tampilkan</button></div>
+
+    <app-skeleton v-if="analisaLoading" type="table"></app-skeleton>
+
+    <div v-if="!analisaLoading && analisaTab==='unit' && analisaUnitData" class="space-y-3">
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3"><app-stat-card title="Total" :value="analisaUnitData.total" icon="fa-solid fa-file-lines" color="emerald" :subtext="analisaUnitData.tahun"></app-stat-card><app-stat-card title="Top Unit" :value="(analisaUnitData.distribusi&&analisaUnitData.distribusi[0]&&analisaUnitData.distribusi[0].unit_id)||'—'" icon="fa-solid fa-building" color="sky" subtext="terbanyak"></app-stat-card><app-stat-card title="Unit" :value="(analisaUnitData.distribusi||[]).length" icon="fa-solid fa-users" color="amber" subtext="terdata"></app-stat-card></div>
+      <div class="table-scroll"><table class="w-full text-xs"><thead class="border-b"><tr><th class="text-left py-2 px-2 min-w-[140px]">Unit</th><th class="text-right py-2 px-2 min-w-[70px]">Jml</th><th class="text-right py-2 px-2 min-w-[70px]">%</th></tr></thead><tbody class="divide-y"><tr v-for="r in analisaUnitData.distribusi" :key="r.unit_id"><td class="py-2 px-2">{{ r.unit_id }}</td><td class="py-2 px-2 text-right font-bold">{{ r.jumlah||r.jml }}</td><td class="py-2 px-2 text-right">{{ r.pct||'—' }}{{ r.pct ? '%' : '' }}</td></tr></tbody></table></div>
+    </div>
+
+    <div v-if="!analisaLoading && analisaTab==='top' && analisaTopData" class="space-y-3">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3"><app-stat-card title="Top Pengumpul" :value="(analisaTopData.top&&analisaTopData.top[0]&&analisaTopData.top[0].nama)||'—'" icon="fa-solid fa-trophy" color="emerald" subtext="terbanyak"></app-stat-card><app-stat-card title="Total" :value="analisaTopData.total||0" icon="fa-solid fa-file-lines" color="sky" :subtext="analisaTopData.tahun"></app-stat-card></div>
+      <div class="table-scroll"><table class="w-full text-xs"><thead class="border-b"><tr><th class="text-left py-2 px-2 min-w-[200px]">Pegawai</th><th class="text-right py-2 px-2 min-w-[60px]">Jml</th><th class="text-right py-2 px-2 min-w-[60px]">%</th></tr></thead><tbody class="divide-y"><tr v-for="r in analisaTopData.top" :key="r.pegawai_id"><td class="py-2 px-2">{{ r.nama }}</td><td class="py-2 px-2 text-right font-bold">{{ r.jumlah||r.jml }}</td><td class="py-2 px-2 text-right">{{ r.pct }}%</td></tr></tbody></table></div>
+    </div>
+
+    <div v-if="!analisaLoading && analisaTab==='beban' && analisaBebanData" class="table-scroll">
+      <table class="w-full text-xs"><thead class="border-b"><tr><th class="text-left py-2 px-2 min-w-[200px]">Verifikator</th><th class="text-right py-2 px-2 min-w-[60px]">Diteruskan</th><th class="text-right py-2 px-2 min-w-[60px]">Diproses</th><th class="text-right py-2 px-2 min-w-[60px]">Selesai</th><th class="text-right py-2 px-2 min-w-[60px]">Jml</th></tr></thead><tbody class="divide-y"><tr v-for="r in analisaBebanData.beban" :key="r.pegawai_id||r.verifikator_id"><td class="py-2 px-2">{{ r.nama }}</td><td class="py-2 px-2 text-right">{{ r.diteruskan||0 }}</td><td class="py-2 px-2 text-right">{{ r.diproses||0 }}</td><td class="py-2 px-2 text-right">{{ r.selesai||0 }}</td><td class="py-2 px-2 text-right font-bold">{{ r.jumlah||r.jml }}</td></tr></tbody></table>
+    </div>
+
+    <div v-if="!analisaLoading && analisaTab==='sla' && analisaSlaData" class="space-y-3">
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3"><app-stat-card title="Total Verif" :value="analisaSlaData.total||0" icon="fa-solid fa-check" color="emerald" :subtext="analisaSlaData.tahun"></app-stat-card><app-stat-card title="Lewat >3h" :value="analisaSlaData.lewat_total||0" icon="fa-solid fa-clock" color="amber" subtext="perlu R3"></app-stat-card></div>
+      <div class="table-scroll"><table class="w-full text-xs"><thead class="border-b"><tr><th class="text-left py-2 px-2 min-w-[200px]">Verifikator</th><th class="text-right py-2 px-2 min-w-[60px]">Total</th><th class="text-right py-2 px-2 min-w-[60px]">Lewat</th><th class="text-right py-2 px-2 min-w-[60px]">% Lewat</th><th class="text-right py-2 px-2 min-w-[80px]">Avg Hari</th></tr></thead><tbody class="divide-y"><tr v-for="r in analisaSlaData.sla" :key="r.verifikator_id"><td class="py-2 px-2">{{ r.nama }}</td><td class="py-2 px-2 text-right">{{ r.total }}</td><td class="py-2 px-2 text-right font-bold text-amber-600">{{ r.lewat }}</td><td class="py-2 px-2 text-right">{{ r.pct_lewat }}%</td><td class="py-2 px-2 text-right">{{ r.avg_hari }}</td></tr></tbody></table></div>
+    </div>
+
+    <div v-if="!analisaLoading && analisaTab==='retensi' && analisaRetensiData" class="space-y-3">
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3"><app-stat-card title="Tahun" :value="analisaRetensiData.tahun" icon="fa-solid fa-calendar" color="emerald" subtext="basis"></app-stat-card><app-stat-card title="Perlu Musnah" :value="(analisaRetensiData.retensi||[]).reduce(function(a,b){ return a+(b.perlu_musnah||0); },0)" icon="fa-solid fa-trash" color="rose" subtext="≤tahun-5"></app-stat-card></div>
+      <div class="table-scroll"><table class="w-full text-xs"><thead class="border-b"><tr><th class="text-left py-2 px-2 min-w-[80px]">Tahun Proyeksi</th><th class="text-right py-2 px-2 min-w-[60px]">Jml</th><th class="text-right py-2 px-2 min-w-[100px]">Perlu Musnah</th><th class="text-right py-2 px-2 min-w-[100px]">Perlu Permanen</th></tr></thead><tbody class="divide-y"><tr v-for="r in analisaRetensiData.retensi" :key="r.tahun_proyeksi"><td class="py-2 px-2">{{ r.tahun_proyeksi }}</td><td class="py-2 px-2 text-right">{{ r.jml||r.jumlah }}</td><td class="py-2 px-2 text-right">{{ r.perlu_musnah||0 }}</td><td class="py-2 px-2 text-right">{{ r.perlu_permanen||0 }}</td></tr></tbody></table></div>
+    </div>
+
+    <div v-if="!analisaLoading && analisaTab==='korelasi' && analisaKorelasiData" class="space-y-3">
+      <div class="table-scroll"><table class="w-full text-xs"><thead class="border-b"><tr><th class="text-left py-2 px-2 min-w-[140px]">Jenis × Unit</th><th v-for="u in (analisaKorelasiData.unit||[])" :key="u" class="text-right py-2 px-2 min-w-[80px]">{{ u }}</th></tr></thead><tbody class="divide-y"><tr v-for="(row,i) in (analisaKorelasiData.matrix||[])" :key="i"><td class="py-2 px-2 font-semibold">{{ (analisaKorelasiData.jenis||[])[i] }}</td><td v-for="(c,j) in row" :key="j" class="py-2 px-2 text-right">{{ c }}</td></tr></tbody></table></div>
+      <div v-if="!analisaKorelasiData.matrix" class="table-scroll"><table class="w-full text-xs"><thead class="border-b"><tr><th class="text-left py-2 px-2 min-w-[140px]">Jenis</th><th class="text-left py-2 px-2 min-w-[140px]">Unit</th><th class="text-right py-2 px-2 min-w-[60px]">Jml</th></tr></thead><tbody class="divide-y"><tr v-for="r in analisaKorelasiData.korelasi||[]" :key="r.jenis+'-'+r.unit"><td class="py-2 px-2">{{ r.jenis }}</td><td class="py-2 px-2">{{ r.unit }}</td><td class="py-2 px-2 text-right font-bold">{{ r.jumlah||r.jml }}</td></tr></tbody></table></div>
+    </div>
+
+    <div v-if="!analisaLoading && analisaTab==='tte' && analisaTteData" class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <app-stat-card title="Total" :value="analisaTteData.total||0" icon="fa-solid fa-file-lines" color="emerald" :subtext="analisaTteData.tahun"></app-stat-card>
+      <app-stat-card title="TTE" :value="analisaTteData.tte||0" icon="fa-solid fa-signature" color="sky" :subtext="analisaTteData.pct + '% — placeholder v2'"></app-stat-card>
+      <app-stat-card title="%" :value="(analisaTteData.pct||0) + '%'" icon="fa-solid fa-percent" color="amber" subtext="future G15"></app-stat-card>
+    </div>
+
+    <div v-if="!analisaLoading && analisaTab==='kritis' && analisaKritisData" class="table-scroll">
+      <table class="w-full text-xs"><thead class="border-b"><tr><th class="text-left py-2 px-2 min-w-[80px]">Bulan</th><th class="text-right py-2 px-2 min-w-[60px]">Jml</th><th class="text-right py-2 px-2 min-w-[60px]">Belum</th><th class="text-right py-2 px-2 min-w-[60px]">%</th></tr></thead><tbody class="divide-y"><tr v-for="r in analisaKritisData.rekap" :key="r.bulan"><td class="py-2 px-2">{{ r.nama_bulan||r.bulan }}</td><td class="py-2 px-2 text-right">{{ r.jml||r.jumlah }}</td><td class="py-2 px-2 text-right">{{ r.belum }}</td><td class="py-2 px-2 text-right">{{ r.pct||'—' }}{{ r.pct ? '%' : '' }}</td></tr></tbody></table>
+    </div>
+
+    <app-empty-state v-if="!analisaLoading && !analisaUnitData && !analisaTopData && !analisaBebanData && !analisaSlaData && !analisaKritisData && !analisaRetensiData && !analisaKorelasiData && !analisaTteData" icon="fa-solid fa-chart-line" title="Belum dimuat" subtitle="Pilih tab + klik Tampilkan"></app-empty-state>
+  </div>
+</section>
