@@ -75,7 +75,20 @@ function canonicalSimpegSheet_(sheetName) {
   return null;
 }
 function isSimpegSheet_(sheetName) { return canonicalSimpegSheet_(sheetName) !== null; }
-function isRefSheet_(name) { return String(name || '').toUpperCase().indexOf('M_') === 0; }
+// FIX v1.5: M_JENIS_DOKUMEN, M_KATEGORI_DOKUMEN, M_PERIODE adalah LOKAL, bukan referensi SIMPEG.
+// isRefSheet_ hanya true untuk sheet SIMPEG (PEGAWAI, UNIT_KERJA, JABATAN) — bukan semua M_.
+// Jika semua M_ dianggap ref, maka CoreLib akan baca dari masterSsId dan blokir save → JENIS.1 FAIL + SCHEMA missing.
+function isRefSheet_(name) {
+  var n = String(name || '').trim();
+  if (!n) return false;
+  // Local sheets jangan dianggap ref — walau namanya M_
+  if (LOCAL_SHEETS[n]) return false;
+  var upper = n.toUpperCase();
+  if (LOCAL_SHEETS[upper]) return false;
+  // Hanya SIMPEG yang ref
+  if (isSimpegSheet_(n)) return true;
+  return false;
+}
 
 // ==================== §3b HEADER MAP — SIDOKUMEN ====================
 var ALL_SHEET_HEADERS = {
