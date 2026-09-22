@@ -1,5 +1,5 @@
-// SIDOKUMEN - 10_LaporanApi.gs (v1.5 — Laporan L1-L3, L7-L10)
-// L1 Daftar Dokumen, L2 per Jenis, L3 per Pegawai, L7 per Periode, L8 per Status, L9 Keterlambatan, L10 File Bermasalah
+// SIDOKUMEN - 10_LaporanApi.gs (v1.0.2 — L1-L3, L7-L10)
+// Fix v1.0.2: filter T_JADWAL berbasis tanggal_mulai/selesai (T_JADWAL tidak punya kolom tahun/periode)
 
 function laporanDaftarDokumen_(params) {
   var list = getSheetData_('T_DOKUMEN');
@@ -39,18 +39,30 @@ function laporanRekapStatus_(params) {
   return { success: true, data: { tahun: tahun, total: list.length, rekap: rekap } };
 }
 
+// Helper: ambil deadline per jenis dari T_JADWAL (default H+7 Januari tahun berjalan)
+// FIX v1.0.2: T_JADWAL tidak punya kolom tahun/periode — filter berdasarkan tanggal_selesai/tanggal_mulai.
+function buildDeadlineMap_(tahun) {
+  var jadwal = getSheetData_('T_JADWAL').filter(function (j) {
+    var t = String(j.tanggal_selesai || j.tanggal_mulai || '');
+    return t.indexOf(String(tahun)) === 0;
+  });
+  var map = {};
+  jadwal.forEach(function (j) {
+    if (j.jenis_dokumen_id) map[j.jenis_dokumen_id] = j.tanggal_selesai || j.tanggal_mulai;
+  });
+  return map;
+}
+
 function laporanKeterlambatan_(params) {
   var tahun = params.tahun || String(new Date().getFullYear());
-  // Ambil jadwal deadline dari T_JADWAL bila ada, else default H+7
-  var jadwal = getSheetData_('T_JADWAL').filter(function (j) { return String(j.tahun || j.periode || '').indexOf(tahun) !== -1 || !j.tahun; });
-  var deadlineMap = {};
-  jadwal.forEach(function (j) { if (j.jenis_dokumen_id) deadlineMap[j.jenis_dokumen_id] = j.tanggal_selesai || j.tanggal_mulai; });
+  var deadlineMap = buildDeadlineMap_(tahun);
   var list = getSheetData_('T_DOKUMEN').filter(function (r) { return String(r.tahun) === String(tahun); });
   var terlambat = [];
   list.forEach(function (r) {
-    var dl = deadlineMap[r.jenis_dokumen_id] || (r.tahun + '-01-07'); // default 7 Jan tahun itu untuk PK
+    var dl = deadlineMap[r.jenis_dokumen_id];
+    if (!dl) return; // tidak ada deadline → skip (bukan default blanket Jan-07)
     var tglUpload = CoreLib.dateKey10(r.created_at) || '';
-    if (tglUpload && dl && tglUpload > dl) {
+    if (tglUpload && tglUpload > dl) {
       terlambat.push({ id: r.id, pegawai_id: r.pegawai_id, jenis_dokumen_id: r.jenis_dokumen_id, tgl_upload: tglUpload, deadline: dl, selisih_hari: Math.round((new Date(tglUpload) - new Date(dl)) / (1000 * 60 * 60 * 24)) });
     }
   });
@@ -67,11 +79,6 @@ function laporanFileBermasalah_(params) {
     if (!r.file_drive_id) issues.push('tanpa file_drive_id');
     if (r.file_mime && String(r.file_mime).toLowerCase().indexOf('pdf') === -1) issues.push('bukan PDF: ' + r.file_mime);
     if (r.file_size && Number(r.file_size) > 10 * 1024 * 1024) issues.push('>10MB: ' + r.file_size);
-    var namaStandar = String(r.tahun) + '_' + String(r.jenis_dokumen_id || '') + '_' + String(r.pegawai_id || '') + (r.bulan ? '_' + r.bulan : '') + '.pdf';
-    if (r.file_name && r.file_name !== namaStandar) {
-      // hanya warning, tidak hard fail
-      // issues.push('nama tidak standar: ' + r.file_name + ' vs ' + namaStandar);
-    }
     if (issues.length) bermasalah.push({ id: r.id, pegawai_id: r.pegawai_id, jenis_dokumen_id: r.jenis_dokumen_id, file_name: r.file_name, file_size: r.file_size, file_mime: r.file_mime, issues: issues });
   });
   return { success: true, data: { tahun: tahun, total: list.length, bermasalah_total: bermasalah.length, list: bermasalah.slice(0, 100) } };
