@@ -37,7 +37,7 @@
   </div>
 
   <div class="flex flex-col sm:flex-row gap-2 items-end">
-    <div class="flex-1 w-full"><label class="filter-label">Cari</label><input type="text" class="input w-full" placeholder="Cari judul / deskripsi / assignee..." v-model="rtlSearch" @input="loadRtl(1)"></div>
+    <div class="flex-1 w-full"><label class="filter-label">Cari</label><input type="text" class="input w-full" placeholder="Cari judul / deskripsi / assignee..." v-model="rtlSearch" @input="debouncedLoadRtl()"></div>
     <div class="w-36"><label class="filter-label">Status</label>
       <select class="input w-full" v-model="rtlFilters.status_rtl" @change="loadRtl(1)">
         <option value="">Semua Status</option>
