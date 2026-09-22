@@ -134,10 +134,11 @@
 
     <!-- E7 Fisik -->
     <div v-if="!evaluasiLoading && evaluasiTab==='fisik' && evaluasiFisikData" class="space-y-3">
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
         <app-stat-card title="Total" :value="evaluasiFisikData.total" icon="fa-solid fa-file-lines" color="emerald" :subtext="evaluasiFisikData.tahun"></app-stat-card>
-        <app-stat-card title="Tanpa Lokasi" :value="evaluasiFisikData.tanpa_lokasi" icon="fa-solid fa-box-open" color="amber" :subtext="evaluasiFisikData.pct_tanpa + '%'"></app-stat-card>
-        <app-stat-card title="Ada Lokasi" :value="evaluasiFisikData.total - evaluasiFisikData.tanpa_lokasi" icon="fa-solid fa-box" color="sky" subtext="terdata"></app-stat-card>
+        <app-stat-card title="Ada Lokasi" :value="evaluasiFisikData.ada_lokasi||0" icon="fa-solid fa-box" color="sky" :subtext="(evaluasiFisikData.pct_ada||0) + '%'"></app-stat-card>
+        <app-stat-card title="Tanpa Lokasi" :value="evaluasiFisikData.tanpa_lokasi||0" icon="fa-solid fa-box-open" color="amber" :subtext="(evaluasiFisikData.pct_tanpa||0) + '%'"></app-stat-card>
+        <app-stat-card title="Coverage" :value="(evaluasiFisikData.pct_ada||0) + '%'" icon="fa-solid fa-percent" color="purple" subtext="lokasi terdata"></app-stat-card>
       </div>
       <p class="text-[11px] text-slate-400">{{ evaluasiFisikData.note }}</p>
     </div>
