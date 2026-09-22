@@ -1,4 +1,4 @@
-// SIDOKUMEN - 99_TestSuite.gs (v1.0.2 — 12 sheet + 91 localHandlers + 2 native)
+// SIDOKUMEN - 99_TestSuite.gs (v1.0.3 — 12 sheet + 91 localHandlers + 2 native + 20 domain test)
 var TEST_USER_ADMIN_ = { id: 'TEST-ADMIN', email: 'test.admin@trenggalekkab.go.id', role: 'admin', pegawai_id: '' };
 var TEST_USER_USER_ = { id: 'TEST-USER', email: 'test.user@trenggalekkab.go.id', role: 'user', pegawai_id: 'TEST-PEGAWAI-001' };
 
@@ -20,7 +20,7 @@ function testDispatcherRouting() {
   var ok=0,fail=0; function verdict(c,l){ if(c){ ok++; Logger.log('✅ '+l); } else { fail++; Logger.log('❌ '+l); } }
   var handlers=buildLocalHandlers_(); var cfg=getAppConfig_(); var actionLevels=cfg.actionLevels||{};
   var hKeys=Object.keys(handlers);
-  verdict(hKeys.length>=90, 'localHandlers '+hKeys.length+' (target 91 local + 2 native =93)');
+  verdict(hKeys.length>=90, 'localHandlers '+hKeys.length+' (target ≥90 local + 2 native =93)');
   var missingLevels=hKeys.filter(function(k){ if(['exchange_platform_ticket','logout'].indexOf(k)!==-1) return false; return actionLevels[k]===undefined; });
   verdict(missingLevels.length===0, 'Semua handler punya actionLevels' + (missingLevels.length ? ' MISSING: '+missingLevels.join(', ') : ''));
   var ping=handleAction({action:'ping'});
@@ -30,7 +30,7 @@ function testDispatcherRouting() {
   return {ok:ok,fail:fail};
 }
 function runDomainTestsSidokumen() {
-  Logger.log('🎯 DOMAIN SIDOKUMEN');
+  Logger.log('🎯 DOMAIN SIDOKUMEN v1.0.3 — 20 test');
   var results=[];
   try{
     var r1=saveGeneric_('M_JENIS_DOKUMEN',{record:{kode:'TST-'+Date.now(), nama:'Test Jenis '+Date.now(), kategori:'LAINNYA', periode:'Fleksibel', urutan:99, status_aktif:'true'}}, TEST_USER_ADMIN_);
@@ -57,20 +57,43 @@ function runDomainTestsSidokumen() {
     }catch(e){ _assert_(results,'DOK.3',false,e.message); }
     try{ softDeleteRecord_('T_DOKUMEN', savedId, TEST_USER_USER_); }catch(e){}
   }
+  // Laporan
   try{ var r=lapRekapKlasifikasi_({tahun:'2026'}); _assert_(results,'L4 rekap jenis shape', r.success&&r.data&&Array.isArray(r.data.rekap), r.error||''); }catch(e){ _assert_(results,'L4',false,e.message); }
   try{ var r=lapRekapPegawai_({tahun:'2026'}); _assert_(results,'L6 rekap pegawai shape', r.success&&r.data&&Array.isArray(r.data.rekap), r.error||''); }catch(e){ _assert_(results,'L6',false,e.message); }
+  try{ var r=laporanKeterlambatan_({tahun:'2026'}); _assert_(results,'L9 keterlambatan shape', r.success&&r.data&&Array.isArray(r.data.list), r.error||''); }catch(e){ _assert_(results,'L9',false,e.message); }
+  try{ var r=laporanFileBermasalah_({tahun:'2026'}); _assert_(results,'L10 file bermasalah shape', r.success&&r.data&&Array.isArray(r.data.list), r.error||''); }catch(e){ _assert_(results,'L10',false,e.message); }
   try{ var r=lapKepatuhanUpload_({tahun:'2026'}); _assert_(results,'L11 kepatuhan shape', r.success&&r.data&&Array.isArray(r.data.rekap), r.error||''); }catch(e){ _assert_(results,'L11',false,e.message); }
   try{ var r=laporanKhasData_({tahun:'2026'}); _assert_(results,'L12 khas 7 sheet data shape', r.success&&r.data&&r.data.klasifikasi&&r.data.pegawai, r.error||''); }catch(e){ _assert_(results,'L12',false,e.message); }
+  // Analisa
   try{ var r=analisaDistribusiUnit_({tahun:'2026'}); _assert_(results,'A3 distribusi unit shape', r.success&&r.data&&Array.isArray(r.data.distribusi), r.error||''); }catch(e){ _assert_(results,'A3',false,e.message); }
+  try{
+    var r=analisaRetensi_({tahun:'2026'});
+    _assert_(results,'A6 retensi shape (proyeksi 5 tahun)', r.success && r.data && Array.isArray(r.data.proyeksi) && r.data.proyeksi.length===5, r.error||'');
+  }catch(e){ _assert_(results,'A6',false,e.message); }
+  try{
+    var r=analisaKorelasiJenisUnit_({tahun:'2026'});
+    _assert_(results,'A7 korelasi shape (units[] + matrix[])', r.success && r.data && Array.isArray(r.data.units) && Array.isArray(r.data.matrix), r.error||'');
+  }catch(e){ _assert_(results,'A7',false,e.message); }
   try{ var r=analisaSlaPejabat_({tahun:'2026'}); _assert_(results,'A9 SLA pejabat shape', r.success&&r.data&&Array.isArray(r.data.sla), r.error||''); }catch(e){ _assert_(results,'A9',false,e.message); }
+  // Evaluasi
   try{ var r=evaluasiKelengkapan_({tahun:'2026'}); _assert_(results,'E3 kelengkapan shape', r.success&&r.data&&r.data.missing!==undefined, r.error||''); }catch(e){ _assert_(results,'E3',false,e.message); }
   try{ var r=evaluasiFormat_({tahun:'2026'}); _assert_(results,'E4 format shape', r.success&&r.data&&r.data.rincian!==undefined, r.error||''); }catch(e){ _assert_(results,'E4',false,e.message); }
+  try{
+    var r=evaluasiKadaluarsa_({tahun:'2026'});
+    _assert_(results,'E6 kadaluarsa shape (total_kadaluarsa + tanpa_ba)', r.success && r.data && r.data.total_kadaluarsa!==undefined && r.data.tanpa_ba!==undefined, r.error||'');
+  }catch(e){ _assert_(results,'E6',false,e.message); }
+  try{
+    var r=evaluasiAlihMedia_({tahun:'2026'});
+    _assert_(results,'E8 alih media shape (rekap[])', r.success && r.data && Array.isArray(r.data.rekap), r.error||'');
+  }catch(e){ _assert_(results,'E8',false,e.message); }
+  // RTL
   try{ var r=generateTindakLanjut_({tahun:'2026', sumber_evaluasi:'semua'}, TEST_USER_ADMIN_); _assert_(results,'R1-R5 generate idempoten', r.success, r.error||''); }catch(e){ _assert_(results,'R generate',false,e.message); }
+  // Schema
   try{
     var ss=CoreLib.getDb(SPREADSHEET_ID);
     var sheetsBisnis=Object.keys(LOCAL_SHEETS).map(function(k){ return LOCAL_SHEETS[k]; }).filter(function(v,i,a){ return a.indexOf(v)===i; });
     var missing=sheetsBisnis.filter(function(name){ return !ss.getSheetByName(name); });
-    _assert_(results,'SCHEMA.1 12 sheet ada ('+sheetsBisnis.length+')', missing.length===0, missing.length?'MISSING: '+missing.join(', '):'');
+    _assert_(results,'SCHEMA.1 '+sheetsBisnis.length+' sheet ada', missing.length===0, missing.length?'MISSING: '+missing.join(', '):'');
   }catch(e){ _assert_(results,'SCHEMA.1',false,e.message); }
   var pass=results.filter(function(r){ return r.status==='PASS'; }).length;
   var fail=results.filter(function(r){ return r.status==='FAIL'; }).length;
@@ -79,13 +102,13 @@ function runDomainTestsSidokumen() {
 }
 function runAllTestsSidokumen() {
   Logger.log('##########################################################');
-  Logger.log('## TEST SUITE SIDOKUMEN v1.0.2 — 12 sheet + 91 handler + Drive');
+  Logger.log('## TEST SUITE SIDOKUMEN v1.0.3 — 12 sheet + 91 handler + 20 domain test');
   Logger.log('##########################################################');
   var lib=runLibraryTests(); Logger.log('');
   var routing=testDispatcherRouting(); Logger.log('');
   var domain=runDomainTestsSidokumen(); Logger.log('');
   Logger.log('## REKAP: Library PASS '+lib.passed+' FAIL '+lib.failed+' | Routing '+routing.ok+'/'+routing.fail+' | Domain PASS '+domain.pass+' FAIL '+domain.fail);
   var allPass=(lib.failed===0)&&(routing.fail===0)&&(domain.fail===0);
-  Logger.log(allPass?'🎉 SEMUA HIJAU':'⚠️ Ada GAGAL');
+  Logger.log(allPass?'🎉 SEMUA HIJAU FULL PIRAMIDA':'⚠️ Ada GAGAL');
   return {library:lib,routing:routing,domain:domain,allPass:allPass};
 }
