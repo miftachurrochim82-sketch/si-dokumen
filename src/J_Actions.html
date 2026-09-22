@@ -1,8 +1,45 @@
 <script>
-// SIDOKUMEN - J_Actions.html (v1.0.2 — form submit + verifikasi + RTL + role-guard)
+// SIDOKUMEN - J_Actions.html (v1.0.3 — form submit + role-guard + open* helper)
+// FIX v1.0.3:
+//   - Tambah openDokumenCreate/openJenisCreate/openRtlCreate (dipisah dari inline template)
+//   - Role-guard: user biasa auto-fill pegawai_id sendiri
+//   - Konsisten error handling
 window.SidokumenActions = {
   methods: {
-    // ============ DOKUMEN ============
+    // ============================================================
+    // DOKUMEN
+    // ============================================================
+    openDokumenCreate() {
+      var y = String(new Date().getFullYear());
+      this.dokumenForm = {
+        id:'', pegawai_id:'', jenis_dokumen_id:'', tahun: y, bulan:'', periode_label:'',
+        judul:'', deskripsi:'', file_drive_id:'', file_name:'', file_size:0,
+        file_mime:'', status:'baru', uploaded_by:'', catatan:''
+      };
+      // User biasa auto-fill diri sendiri
+      if (!this.isAdmin && this.currentUser && this.currentUser.pegawai_id) {
+        this.dokumenForm.pegawai_id = this.currentUser.pegawai_id;
+      }
+      // Reset file input ref bila ada
+      try { if (this.$refs.fileDokumen) this.$refs.fileDokumen.value = ''; } catch (e) {}
+      this.showDokumenForm = true;
+    },
+
+    openDokumenEdit(r) {
+      this.dokumenForm = Object.assign({
+        id:'', pegawai_id:'', jenis_dokumen_id:'', tahun: String(new Date().getFullYear()),
+        bulan:'', periode_label:'', judul:'', deskripsi:'',
+        file_drive_id:'', file_name:'', file_size:0, file_mime:'',
+        status:'baru', uploaded_by:'', catatan:''
+      }, r || {});
+      // Paksa pegawai_id sendiri untuk non-admin (cegah spoofing)
+      if (!this.isAdmin && this.currentUser && this.currentUser.pegawai_id) {
+        this.dokumenForm.pegawai_id = this.currentUser.pegawai_id;
+      }
+      try { if (this.$refs.fileDokumen) this.$refs.fileDokumen.value = ''; } catch (e) {}
+      this.showDokumenForm = true;
+    },
+
     async simpanDokumen() {
       // Role-guard: user biasa auto-fill pegawai_id sendiri
       if (!this.isAdmin) {
@@ -16,11 +53,11 @@ window.SidokumenActions = {
       try {
         var fileInput = this.$refs.fileDokumen;
         var fileBase64 = '', fileName = '', fileMime = '';
+
         if (fileInput && fileInput.files && fileInput.files[0]) {
           var file = fileInput.files[0];
           if (file.size > 10 * 1024 * 1024) {
             this.showToast('File >10MB', 'error');
-            this.dokumenSaving = false;
             return;
           }
           if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
@@ -35,17 +72,19 @@ window.SidokumenActions = {
             reader.readAsDataURL(file);
           });
         }
+
         var payload = { record: this.dokumenForm };
         if (fileBase64) {
           payload.file_base64 = fileBase64;
           payload.file_name = fileName;
           payload.file_mime = fileMime;
         }
+
         var res = await this.callServer('save_dokumen', payload);
         if (res && res.success) {
           this.showToast('Dokumen disimpan', 'success');
           this.showDokumenForm = false;
-          this.loadDokumen(1);
+          this.loadDokumen(this.dokumenForm.id ? this.dokumenPage : 1);
           this.loadRekapKlasifikasi();
         } else {
           this.showToast(res.error || 'Gagal simpan dokumen', 'error');
@@ -58,7 +97,7 @@ window.SidokumenActions = {
     },
 
     async hapusDokumen(r) {
-      if (!confirm('Hapus "' + (r.judul || r.file_name) + '"?')) return;
+      if (!confirm('Hapus "' + (r.judul || r.file_name || r.id) + '"?')) return;
       try {
         var res = await this.callServer('delete_dokumen', { id: r.id });
         if (res && res.success) {
@@ -68,20 +107,6 @@ window.SidokumenActions = {
           this.showToast(res.error || 'Gagal hapus', 'error');
         }
       } catch (e) { this.showToast('Error hapus', 'error'); }
-    },
-
-    openDokumenEdit(r) {
-      this.dokumenForm = Object.assign({
-        id:'', pegawai_id:'', jenis_dokumen_id:'', tahun: String(new Date().getFullYear()),
-        bulan:'', periode_label:'', judul:'', deskripsi:'',
-        file_drive_id:'', file_name:'', file_size:0, file_mime:'',
-        status:'baru', uploaded_by:'', catatan:''
-      }, r || {});
-      // Jangan biarkan user non-admin ubah pegawai_id via edit
-      if (!this.isAdmin && this.currentUser && this.currentUser.pegawai_id) {
-        this.dokumenForm.pegawai_id = this.currentUser.pegawai_id;
-      }
-      this.showDokumenForm = true;
     },
 
     openDokumenStatus(r) {
@@ -110,9 +135,28 @@ window.SidokumenActions = {
       finally { this.dokumenSaving = false; }
     },
 
-    // ============ JENIS ============
+    // ============================================================
+    // JENIS DOKUMEN
+    // ============================================================
+    openJenisCreate() {
+      this.jenisForm = {
+        id:'', kode:'', nama:'', kategori:'', periode:'',
+        urutan:0, status_aktif:'true', keterangan:''
+      };
+      this.showJenisForm = true;
+    },
+
+    openJenisEdit(j) {
+      this.jenisForm = Object.assign({
+        id:'', kode:'', nama:'', kategori:'', periode:'',
+        urutan:0, status_aktif:'true', keterangan:''
+      }, j || {});
+      this.showJenisForm = true;
+    },
+
     async simpanJenis() {
       if (!this.jenisForm.nama) { this.showToast('Nama wajib', 'warning'); return; }
+      if (!this.jenisForm.kode) { this.showToast('Kode wajib', 'warning'); return; }
       this.jenisSaving = true;
       try {
         var res = await this.callServer('save_jenis', { record: this.jenisForm });
@@ -140,7 +184,29 @@ window.SidokumenActions = {
       } catch (e) { this.showToast('Error hapus', 'error'); }
     },
 
-    // ============ RTL ============
+    // ============================================================
+    // RTL
+    // ============================================================
+    openRtlCreate() {
+      this.rtlForm = {
+        id:'', sumber_evaluasi:'manual', judul_rtl:'', deskripsi:'',
+        assigned_to:'', due_date:'', status_rtl:'baru', progress_pct:0,
+        dokumen_terkait:'', catatan:''
+      };
+      this.showRtlForm = true;
+    },
+
+    openRtlEdit(r) {
+      this.rtlForm = Object.assign({
+        id:'', sumber_evaluasi:'manual', judul_rtl:'', deskripsi:'',
+        assigned_to:'', due_date:'', status_rtl:'baru', progress_pct:0,
+        dokumen_terkait:'', catatan:''
+      }, r || {});
+      // Legacy: kalau ada field `judul` (bukan `judul_rtl`), copy
+      if (r && r.judul && !this.rtlForm.judul_rtl) this.rtlForm.judul_rtl = r.judul;
+      this.showRtlForm = true;
+    },
+
     async simpanRtl() {
       if (!String(this.rtlForm.judul_rtl || '').trim()) {
         this.showToast('Judul RTL wajib', 'warning');
@@ -161,7 +227,7 @@ window.SidokumenActions = {
     },
 
     async hapusRtl(r) {
-      if (!confirm('Hapus RTL "' + (r.judul_rtl || r.judul) + '"?')) return;
+      if (!confirm('Hapus RTL "' + (r.judul_rtl || r.judul || r.id) + '"?')) return;
       try {
         var res = await this.callServer('delete_tindak_lanjut', { id: r.id });
         if (res && res.success) {
@@ -173,20 +239,10 @@ window.SidokumenActions = {
       } catch (e) { this.showToast('Error hapus RTL', 'error'); }
     },
 
-    openRtlEdit(r) {
-      this.rtlForm = Object.assign({
-        id:'', sumber_evaluasi:'manual', judul_rtl:'', deskripsi:'',
-        assigned_to:'', due_date:'', status_rtl:'baru', progress_pct:0,
-        dokumen_terkait:'', catatan:''
-      }, r || {});
-      if (r && r.judul && !this.rtlForm.judul_rtl) this.rtlForm.judul_rtl = r.judul;
-      this.showRtlForm = true;
-    },
-
     openRtlStatus(r) {
       this.rtlStatusTarget = r;
       this.rtlStatusBaru = r.status_rtl || r.status || 'diproses';
-      this.rtlStatusProgress = r.progress_pct || 0;
+      this.rtlStatusProgress = Number(r.progress_pct) || 0;
       this.rtlStatusCatatan = '';
       this.showRtlStatusForm = true;
     },
