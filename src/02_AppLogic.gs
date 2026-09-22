@@ -348,6 +348,7 @@ function deleteConfigItem_(payload, actor) {
 function getDashboard_(actor) {
   var dokumen = getSheetData_('T_DOKUMEN');
   var pegawai = getSheetData_('PEGAWAI');
+  var rtl = getSheetData_('T_TINDAK_LANJUT');
   var tahun = String(new Date().getFullYear());
   var totalDokumen = dokumen.length;
   var totalBaru = dokumen.filter(function (r) { var s = String(r.status).toLowerCase(); return s === 'baru' || s === 'menunggu'; }).length;
@@ -360,8 +361,19 @@ function getDashboard_(actor) {
     var lengkap = (rekap.data.rekap || []).filter(function (r) { return r.pct >= 100; }).length;
     pctLengkap = totalPegawai ? Math.round((lengkap / totalPegawai) * 100) : 0;
   } catch (e) {}
+
+  // RTL stats (v1.0.3 — fix docs vs kode)
+  var totalRtl = rtl.length;
+  var rtlBaru = rtl.filter(function (r) { return String(r.status_rtl || '').toLowerCase() === 'baru'; }).length;
+  var rtlSelesai = rtl.filter(function (r) { return String(r.status_rtl || '').toLowerCase() === 'selesai'; }).length;
+
   var actorNama = (actor && (actor.display_name || actor.nama || actor.nama_lengkap)) || '';
-  return { success: true, data: { totalDokumen: totalDokumen, totalBaru: totalBaru, totalDisetujui: totalDisetujui, pctLengkap: pctLengkap, totalPegawai: totalPegawai, totalJenis: jenisAktif, tahun: tahun, role: (actor && actor.role) || 'viewer', nama: actorNama } };
+  return { success: true, data: {
+    totalDokumen: totalDokumen, totalBaru: totalBaru, totalDisetujui: totalDisetujui,
+    pctLengkap: pctLengkap, totalPegawai: totalPegawai, totalJenis: jenisAktif,
+    tahun: tahun, role: (actor && actor.role) || 'viewer', nama: actorNama,
+    totalRtl: totalRtl, rtlBaru: rtlBaru, rtlSelesai: rtlSelesai
+  } };
 }
 
 // ==================== §7 INIT DATABASE ====================
