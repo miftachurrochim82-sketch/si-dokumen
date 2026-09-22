@@ -1,8 +1,8 @@
 // ============================================================
-// SIDOKUMEN - 01_ConfigAndBridge.gs (v1.0 — 11 sheet + 72 handler + Drive + UIUX v1.10)
+// SIDOKUMEN - 01_ConfigAndBridge.gs (v1.0.2 — 12 sheet + 91 handler + Drive + UIUX v1.10)
 // ============================================================
-// Bridge ke CoreLib v2.3.0 pin 15 + kontrak dispatcher v2 — pola starter-kit v2.10.1 (si-arsip v1.9)
-// Rujukan docs: 04_DATABASE.md — 11 sheet (3 master + 8 tabel) + Drive folder SIDOKUMEN
+// Bridge ke CoreLib v2.3.0 pin 15 + kontrak dispatcher v2
+// 12 sheet = 11 domain + 1 KONFIGURASI
 
 // ==================== §1 KONSTANTA GLOBAL ====================
 var APP_CODE  = 'SIDOKUMEN';
@@ -30,7 +30,7 @@ var MASTER_SPREADSHEET_ID = CoreLib.getEnvProperty('MASTER_SPREADSHEET_ID', appP
 var PLATFORM_API_URL = CoreLib.getEnvProperty('PLATFORM_API_URL', appProps_())
   || DEFAULT_PLATFORM_URL;
 
-// ==================== §3 SKEMA SHEET — SIDOKUMEN ====================
+// ==================== §3 SKEMA SHEET — SIDOKUMEN (12 sheet) ====================
 var LOCAL_SHEETS = {
   M_JENIS_DOKUMEN: 'M_JENIS_DOKUMEN',
   M_KATEGORI_DOKUMEN: 'M_KATEGORI_DOKUMEN',
@@ -43,7 +43,8 @@ var LOCAL_SHEETS = {
   T_JADWAL: 'T_JADWAL',
   T_REKAP: 'T_REKAP',
   T_TINDAK_LANJUT: 'T_TINDAK_LANJUT',
-  T_RTL: 'T_TINDAK_LANJUT'
+  T_RTL: 'T_TINDAK_LANJUT',
+  KONFIGURASI: 'KONFIGURASI'
 };
 
 var LOCAL_ID_PREFIX_ = {
@@ -58,7 +59,7 @@ var LOCAL_ID_PREFIX_ = {
   'T_JADWAL': 'jdw',
   'T_REKAP': 'rkp',
   'T_TINDAK_LANJUT': 'rtl',
-  'T_RTL': 'rtl'
+  'KONFIGURASI': 'cfg'
 };
 
 var SIMPEG_SHEET_ALIAS_ = {
@@ -75,17 +76,14 @@ function canonicalSimpegSheet_(sheetName) {
   return null;
 }
 function isSimpegSheet_(sheetName) { return canonicalSimpegSheet_(sheetName) !== null; }
-// FIX v1.5: M_JENIS_DOKUMEN, M_KATEGORI_DOKUMEN, M_PERIODE adalah LOKAL, bukan referensi SIMPEG.
+
 // isRefSheet_ hanya true untuk sheet SIMPEG (PEGAWAI, UNIT_KERJA, JABATAN) — bukan semua M_.
-// Jika semua M_ dianggap ref, maka CoreLib akan baca dari masterSsId dan blokir save → JENIS.1 FAIL + SCHEMA missing.
 function isRefSheet_(name) {
   var n = String(name || '').trim();
   if (!n) return false;
-  // Local sheets jangan dianggap ref — walau namanya M_
   if (LOCAL_SHEETS[n]) return false;
   var upper = n.toUpperCase();
   if (LOCAL_SHEETS[upper]) return false;
-  // Hanya SIMPEG yang ref
   if (isSimpegSheet_(n)) return true;
   return false;
 }
@@ -140,6 +138,10 @@ var ALL_SHEET_HEADERS = {
   T_RTL: [
     'id', 'sumber_evaluasi', 'judul_rtl', 'deskripsi', 'assigned_to', 'due_date', 'status_rtl', 'progress_pct', 'dokumen_terkait', 'catatan',
     'created_at', 'updated_at', 'created_by', 'updated_by', 'deleted_at'
+  ],
+  // PRIMARY KEY = key (di-copy ke id oleh preSaveHook_ agar apiSave/apiDelete bekerja)
+  KONFIGURASI: [
+    'id', 'key', 'value', 'created_at', 'updated_at', 'created_by', 'updated_by', 'deleted_at'
   ],
   ZZ_TEST_CRUD: ['id', 'laporan_id', 'nama', 'no_hp', 'catatan_baru'],
   PEGAWAI: [
@@ -225,14 +227,20 @@ function findRecordById_(sheetName, id) {
   return null;
 }
 
-// ==================== §6 PRE-SAVE HOOK P1+P2 ====================
+// ==================== §6 PRE-SAVE HOOK ====================
 function localPreSaveHook_(canonical, record, actor) {
   var C = String(canonical || '').toUpperCase();
   if (C === 'T_RTL') C = 'T_TINDAK_LANJUT';
-  if (!record.id || String(record.id).trim() === '') {
+
+  // ID auto-generate (kecuali KONFIGURASI — pakai key sebagai id)
+  if (C === 'KONFIGURASI') {
+    if (record.key && !record.id) record.id = record.key;
+    if (record.id && !record.key) record.key = record.id;
+  } else if (!record.id || String(record.id).trim() === '') {
     var pfx = LOCAL_ID_PREFIX_[C] || C.replace(/^M_/, '').replace(/^T_/, '').substring(0, 3).toLowerCase();
     record.id = pfx + '-' + String(Date.now()).slice(-6);
   }
+
   if (C === 'T_APPROVAL' || C === 'T_DOKUMEN') {
     var actorRole = String((actor && actor.role) || 'viewer').toLowerCase();
     var isVerifikator = ['verifikator', 'admin', 'super'].indexOf(actorRole) !== -1;
@@ -255,7 +263,8 @@ function localPreSaveHook_(canonical, record, actor) {
   return { record: record };
 }
 
-// ==================== §7 KONTRAK DISPATCHER v2 — 87 handler SIDOKUMEN FULL PIRAMIDA 35 output ====================
+// ==================== §7 KONTRAK DISPATCHER v2 ====================
+// 91 localHandlers + 2 native CoreLib (exchange_platform_ticket, logout) = 93 aksi
 function getAppConfig_() {
   return {
     appCode: APP_CODE,
@@ -266,55 +275,36 @@ function getAppConfig_() {
     ttlSeconds: SESSION_TTL_SECONDS,
     roleLevels: ROLE_LEVELS,
     headersMap: ALL_SHEET_HEADERS,
-    pkFields: {},
+    pkFields: { KONFIGURASI: 'key' },
     isRefSheetFunc: isRefSheet_,
     preSaveHook: localPreSaveHook_,
     actionLevels: {
-      // Config 6
       'get_config': 'viewer', 'get_config_list': 'viewer', 'save_config_item': 'admin', 'save_config': 'admin', 'delete_config_item': 'admin', 'delete_config': 'admin',
-      // Self 2
       'get_my_profile': 'viewer', 'save_my_profile': 'viewer',
-      // Dashboard 2
       'get_dashboard': 'viewer', 'dashboard': 'viewer',
-      // SIMPEG 4
       'get_pegawai_list': 'viewer', 'get_unit_list': 'viewer', 'get_jabatan_list': 'viewer', 'get_master_satelit': 'viewer',
-      // Master 9
       'get_jenis_list': 'viewer', 'save_jenis': 'verifikator', 'delete_jenis': 'verifikator',
       'get_kategori_list': 'viewer', 'save_kategori': 'verifikator', 'delete_kategori': 'verifikator',
       'get_periode_list': 'viewer', 'save_periode': 'verifikator', 'delete_periode': 'verifikator',
-      // T_DOKUMEN 4 + verifikasi
       'get_dokumen_list': 'viewer', 'get_dokumen_detail': 'viewer', 'save_dokumen': 'user', 'delete_dokumen': 'user',
       'verifikasi_dokumen': 'verifikator', 'lap_rekap_pegawai': 'viewer',
-      // T_VERIFIKASI 4
       'get_verifikasi_list': 'viewer', 'get_verifikasi_detail': 'viewer', 'save_verifikasi': 'verifikator', 'delete_verifikasi': 'admin',
-      // T_LAMPIRAN 3
       'get_lampiran_list': 'viewer', 'save_lampiran': 'user', 'delete_lampiran': 'user',
-      // T_APPROVAL 4
       'get_approval_list': 'viewer', 'save_approval': 'user', 'delete_approval': 'user', 'verifikasi_approval': 'verifikator',
-      // T_JADWAL 4
       'get_jadwal_list': 'viewer', 'get_jadwal_detail': 'viewer', 'save_jadwal': 'user', 'delete_jadwal': 'user',
-      // T_REKAP 4
       'get_rekap_list': 'viewer', 'generate_rekap': 'verifikator', 'lap_rekap_klasifikasi': 'viewer', 'lap_rekap_unit': 'viewer',
-      // Laporan L1-L3, L7-L10 (10_LaporanApi) — 6
       'laporan_daftar_dokumen': 'viewer', 'laporan_rekap_periode': 'viewer', 'laporan_rekap_status': 'viewer',
       'laporan_keterlambatan': 'viewer', 'laporan_file_bermasalah': 'viewer', 'lap_kepatuhan_upload': 'viewer',
-      // Laporan Khas L12 — 2
       'laporan_khas_data': 'viewer', 'laporan_export_khas': 'user',
-      // Analisa A3-A5 (14) — 3
       'analisa_distribusi_unit': 'viewer', 'analisa_top_pengirim': 'viewer', 'analisa_beban_pejabat': 'viewer',
-      // Analisa A6-A10 (15) — 5
       'analisa_retensi': 'viewer', 'analisa_korelasi_jenis_unit': 'viewer', 'analisa_tte_ratio': 'viewer',
       'analisa_sla_pejabat': 'viewer', 'analisa_kritis_bulanan': 'viewer',
-      // Evaluasi E1-E8 (16) — 8
       'evaluasi_sla_verifikasi': 'viewer', 'evaluasi_sla_upload': 'viewer', 'evaluasi_kelengkapan': 'viewer', 'evaluasi_format': 'viewer',
       'evaluasi_kepatuhan_jenis': 'viewer', 'evaluasi_kadaluarsa': 'viewer', 'evaluasi_fisik': 'viewer', 'evaluasi_alih_media': 'viewer',
-      // Evaluasi legacy alias (compat si-arsip) — 3
       'evaluasi_sla_disposisi': 'viewer', 'evaluasi_jra': 'viewer', 'evaluasi_sla': 'viewer',
-      // RTL R1-R5 (17) — 12 (6 generic + 6 alias)
       'get_tindak_lanjut_list': 'viewer', 'rtl_get_list': 'viewer', 'get_tindak_lanjut_detail': 'viewer', 'rtl_get_detail': 'viewer',
       'save_tindak_lanjut': 'user', 'rtl_save': 'user', 'delete_tindak_lanjut': 'admin', 'rtl_delete': 'admin',
       'ubah_status_tindak_lanjut': 'user', 'rtl_ubah_status': 'user', 'generate_tindak_lanjut': 'user', 'rtl_generate': 'user',
-      // Generic + publik + sistem — 6
       'save': 'admin', 'delete': 'admin', 'ping': 'viewer', 'exchange_platform_ticket': 'viewer', 'logout': 'viewer', 'init_database': 'super'
     },
     entityPermissions: {}, localHandlers: {}
