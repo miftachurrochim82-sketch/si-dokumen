@@ -1,0 +1,75 @@
+<script>
+// SIDOKUMEN - J_Helpers.html (v1.5 full piramida 35 output — UIUX v1.10 + Drive + RTL)
+window.SidokumenHelpers = {
+  methods: {
+    fmtTgl(val) {
+      if (!val) return '—';
+      try {
+        var d=new Date(val);
+        if (isNaN(d.getTime())) return String(val);
+        if (window.CoreLib && CoreLib.dateKey10) {
+          var k=CoreLib.dateKey10(val);
+          if (k) { var p=k.split('-'); return p[2]+'/'+p[1]+'/'+p[0]; }
+        }
+        return d.toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
+      } catch(e){ return String(val); }
+    },
+    formatTanggal(val){ return this.fmtTgl(val); },
+    badgeStatusDokumen(status){
+      var s=String(status||'').toLowerCase().trim();
+      if(s==='disetujui'||s==='selesai') return 'disetujui';
+      if(s==='baru'||s==='draft') return 'draft';
+      if(s==='menunggu'||s==='diproses') return 'menunggu';
+      if(s==='revisi') return 'revisi';
+      if(s==='ditolak'||s==='batal') return 'ditolak';
+      return 'proses';
+    },
+    badgeStatusRtl(status){
+      var s=String(status||'').toLowerCase().trim();
+      if(s==='baru') return 'menunggu';
+      if(s==='diproses') return 'proses';
+      if(s==='selesai'||s==='disetujui') return 'disetujui';
+      if(s==='batal'||s==='ditolak') return 'ditolak';
+      return 'draft';
+    },
+    badgeSumberEvaluasi(sumber){
+      var s=String(sumber||'').toUpperCase().trim();
+      if(s==='E3') return 'revisi';
+      if(s==='E4') return 'menunggu';
+      if(s==='E1') return 'proses';
+      if(s==='E6') return 'draft';
+      if(s==='E5') return 'disetujui';
+      if(s==='MANUAL') return 'info';
+      return 'info';
+    },
+    badgeKategori(k){
+      var s=String(k||'').toUpperCase();
+      if(s==='KINERJA_UTAMA') return 'disetujui';
+      if(s==='PERUBAHAN') return 'menunggu';
+      if(s==='PENILAIAN') return 'proses';
+      if(s==='LAPORAN') return 'info';
+      return 'draft';
+    },
+    namaJenisDokumen_(id){
+      var key=String(id||'').trim(); if(!key) return '—';
+      var list=this.jenisList||[];
+      for(var i=0;i<list.length;i++){ var j=list[i]||{}; if(String(j.id).trim()===key) return j.nama||j.kode||key; }
+      return key;
+    },
+    namaPegawai_(id){
+      if(!id) return '';
+      var list=this.masterPegawaiList||[]; var target=String(id).trim();
+      for(var i=0;i<list.length;i++){ var p=list[i]||{}; if(String(p.id).trim()===target||String(p.pegawai_id).trim()===target) return p.nama_lengkap||p.nama||''; }
+      return id;
+    },
+    nipPegawai(id){
+      if(!id) return '-';
+      var list=this.masterPegawaiList||[]; var target=String(id).trim();
+      for(var i=0;i<list.length;i++){ var p=list[i]||{}; if(String(p.id).trim()===target||String(p.pegawai_id).trim()===target) return p.nip||'-'; }
+      return '-';
+    },
+    toggleRowMenu(id){ this.rowMenuId=this.rowMenuId===id?null:id; },
+    closeMenu(){ this.rowMenuId=null; }
+  }
+};
+</script>

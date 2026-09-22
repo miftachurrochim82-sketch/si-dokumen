@@ -1,0 +1,117 @@
+<script>
+// SIDOKUMEN - J_Api.html (v1.5 full piramida 35 output — 11 sheet + 87 handler + Drive + UIUX v1.10)
+window.SidokumenApi = {
+  methods: {
+    async loadAll(silent){
+      var s=silent===true;
+      await Promise.all([this.loadDashboard(s), this.loadMasterSatelit(s), this.loadDokumen(1), this.loadJenis(), this.loadRtl(1), this.loadRekapKlasifikasi()]);
+    },
+    async loadDashboard(silent){
+      var isSilent=silent===true;
+      try{
+        var res=await this.callServer('get_dashboard');
+        if(res&&res.success&&res.data) this.dashboardData=Object.assign({totalDokumen:0,totalBaru:0,totalDisetujui:0,pctLengkap:0,totalPegawai:0,totalJenis:0,tahun:String(new Date().getFullYear()),role:'viewer',nama:'',totalRtl:0,rtlBaru:0,rtlSelesai:0}, res.data);
+        else if(!isSilent) this.showToast('Gagal memuat dashboard','error');
+      }catch(e){ if(!isSilent) this.showToast('Error koneksi dashboard','error'); }
+    },
+    async loadMasterSatelit(silent){
+      try{
+        var res=await this.callServer('get_master_satelit');
+        if(res&&res.success&&res.data){
+          this.masterPegawaiList=res.data.pegawai||[];
+          this.jenisList=res.data.jenis||this.jenisList||[];
+          this.kategoriList=res.data.kategori||[];
+        }
+      }catch(e){}
+    },
+    async loadDokumen(page){
+      this.dokumenLoading=true;
+      try{
+        var p=page||this.dokumenPage||1;
+        var res=await this.callServer('get_dokumen_list',{page:p, search:this.dokumenFilters.search, tahun:this.dokumenFilters.tahun, jenis_dokumen_id:this.dokumenFilters.jenis_dokumen_id, status:this.dokumenFilters.status, pegawai_id:this.dokumenFilters.pegawai_id, per_page:20});
+        if(res&&res.success){ this.dokumenList=res.data||[]; this.dokumenTotalData=res.total||this.dokumenList.length; this.dokumenTotalPages=res.total_pages||1; this.dokumenPage=res.page||p; }
+        else this.showToast(res.error||'Gagal memuat dokumen','error');
+      }catch(e){ this.showToast('Error koneksi dokumen','error'); }
+      finally{ this.dokumenLoading=false; }
+    },
+    async loadJenis(){ try{ var res=await this.callServer('get_jenis_list',{}); if(res&&res.success) this.jenisList=res.data||[]; }catch(e){} },
+    async loadRekapKlasifikasi(){
+      this.lapKlasLoading=true;
+      try{ var res=await this.callServer('lap_rekap_klasifikasi',{tahun:this.lapKlasTahun}); if(res&&res.success) this.lapKlasData=res.data; else this.showToast(res.error||'Gagal rekap klasifikasi','error'); }catch(e){ this.showToast('Error koneksi rekap','error'); } finally{ this.lapKlasLoading=false; }
+    },
+    async loadRekapPegawai(){
+      this.lapPegawaiLoading=true;
+      try{ var res=await this.callServer('lap_rekap_pegawai',{tahun:this.lapKlasTahun}); if(res&&res.success) this.lapPegawaiData=res.data; else this.showToast(res.error||'Gagal rekap pegawai','error'); }catch(e){} finally{ this.lapPegawaiLoading=false; }
+    },
+    async loadRekapUnit(){
+      this.lapUnitLoading=true;
+      try{ var res=await this.callServer('lap_rekap_unit',{tahun:this.lapKlasTahun}); if(res&&res.success) this.lapUnitData=res.data; else this.showToast(res.error||'Gagal rekap unit','error'); }catch(e){} finally{ this.lapUnitLoading=false; }
+    },
+    async loadRekapPeriode(){
+      this.lapPeriodeLoading=true;
+      try{ var res=await this.callServer('laporan_rekap_periode',{tahun:this.lapKlasTahun}); if(res&&res.success) this.lapPeriodeData=res.data; else this.showToast(res.error||'Gagal rekap periode','error'); }catch(e){} finally{ this.lapPeriodeLoading=false; }
+    },
+    async loadRekapStatus(){
+      this.lapStatusLoading=true;
+      try{ var res=await this.callServer('laporan_rekap_status',{tahun:this.lapKlasTahun}); if(res&&res.success) this.lapStatusData=res.data; else this.showToast(res.error||'Gagal rekap status','error'); }catch(e){} finally{ this.lapStatusLoading=false; }
+    },
+    async loadKeterlambatan(){
+      this.lapTerlambatLoading=true;
+      try{ var res=await this.callServer('laporan_keterlambatan',{tahun:this.lapKlasTahun}); if(res&&res.success) this.lapTerlambatData=res.data; else this.showToast(res.error||'Gagal keterlambatan','error'); }catch(e){} finally{ this.lapTerlambatLoading=false; }
+    },
+    async loadFileBermasalah(){
+      this.lapBermasalahLoading=true;
+      try{ var res=await this.callServer('laporan_file_bermasalah',{tahun:this.lapKlasTahun}); if(res&&res.success) this.lapBermasalahData=res.data; else this.showToast(res.error||'Gagal file bermasalah','error'); }catch(e){} finally{ this.lapBermasalahLoading=false; }
+    },
+    async loadKepatuhan(){
+      this.lapKepatuhanLoading=true;
+      try{ var res=await this.callServer('lap_kepatuhan_upload',{tahun:this.lapKlasTahun}); if(res&&res.success) this.lapKepatuhanData=res.data; else this.showToast(res.error||'Gagal kepatuhan','error'); }catch(e){} finally{ this.lapKepatuhanLoading=false; }
+    },
+    async exportKhas(){
+      this.exportKhasLoading=true;
+      try{ var res=await this.callServer('laporan_export_khas',{tahun:this.lapKlasTahun}); if(res&&res.success){ this.exportKhasResult=res.data; this.showToast('Export Khas jadi','success'); } else this.showToast(res.error||'Gagal export','error'); }catch(e){ this.showToast('Error export','error'); } finally{ this.exportKhasLoading=false; }
+    },
+    async loadAnalisa(){
+      this.analisaLoading=true;
+      try{
+        var tahun=this.analisaTahun;
+        if(this.analisaTab==='unit'){ var res=await this.callServer('analisa_distribusi_unit',{tahun:tahun}); if(res&&res.success) this.analisaUnitData=res.data; }
+        else if(this.analisaTab==='top'){ var res=await this.callServer('analisa_top_pengirim',{tahun:tahun}); if(res&&res.success) this.analisaTopData=res.data; }
+        else if(this.analisaTab==='beban'){ var res=await this.callServer('analisa_beban_pejabat',{tahun:tahun}); if(res&&res.success) this.analisaBebanData=res.data; }
+        else if(this.analisaTab==='sla'){ var res=await this.callServer('analisa_sla_pejabat',{tahun:tahun}); if(res&&res.success) this.analisaSlaData=res.data; }
+        else if(this.analisaTab==='kritis'){ var res=await this.callServer('analisa_kritis_bulanan',{tahun:tahun}); if(res&&res.success) this.analisaKritisData=res.data; }
+        else if(this.analisaTab==='retensi'){ var res=await this.callServer('analisa_retensi',{tahun:tahun}); if(res&&res.success) this.analisaRetensiData=res.data; }
+        else if(this.analisaTab==='korelasi'){ var res=await this.callServer('analisa_korelasi_jenis_unit',{tahun:tahun}); if(res&&res.success) this.analisaKorelasiData=res.data; }
+        else if(this.analisaTab==='tte'){ var res=await this.callServer('analisa_tte_ratio',{tahun:tahun}); if(res&&res.success) this.analisaTteData=res.data; }
+      }catch(e){ this.showToast('Error analisa','error'); } finally{ this.analisaLoading=false; }
+    },
+    async loadEvaluasi(){
+      this.evaluasiLoading=true;
+      try{
+        var tahun=this.evaluasiTahun;
+        if(this.evaluasiTab==='sla_verif'){ var res=await this.callServer('evaluasi_sla_verifikasi',{tahun:tahun}); if(res&&res.success) this.evaluasiSlaVerifData=res.data; }
+        else if(this.evaluasiTab==='sla_upload'){ var res=await this.callServer('evaluasi_sla_upload',{tahun:tahun}); if(res&&res.success) this.evaluasiSlaUploadData=res.data; }
+        else if(this.evaluasiTab==='kelengkapan'){ var res=await this.callServer('evaluasi_kelengkapan',{tahun:tahun}); if(res&&res.success) this.evaluasiKelengkapanData=res.data; }
+        else if(this.evaluasiTab==='format'){ var res=await this.callServer('evaluasi_format',{tahun:tahun}); if(res&&res.success) this.evaluasiFormatData=res.data; }
+        else if(this.evaluasiTab==='kepatuhan'){ var res=await this.callServer('evaluasi_kepatuhan_jenis',{tahun:tahun}); if(res&&res.success) this.evaluasiKepatuhanData=res.data; }
+        else if(this.evaluasiTab==='kadaluarsa'){ var res=await this.callServer('evaluasi_kadaluarsa',{tahun:tahun}); if(res&&res.success) this.evaluasiKadaluarsaData=res.data; }
+        else if(this.evaluasiTab==='fisik'){ var res=await this.callServer('evaluasi_fisik',{tahun:tahun}); if(res&&res.success) this.evaluasiFisikData=res.data; }
+        else if(this.evaluasiTab==='alih'){ var res=await this.callServer('evaluasi_alih_media',{tahun:tahun}); if(res&&res.success) this.evaluasiAlihData=res.data; }
+      }catch(e){ this.showToast('Error evaluasi','error'); } finally{ this.evaluasiLoading=false; }
+    },
+    async loadRtl(page){
+      this.rtlLoading=true;
+      try{
+        var p=page||this.rtlPage||1;
+        var res=await this.callServer('get_tindak_lanjut_list',{page:p, search:this.rtlSearch, status_rtl:this.rtlFilters.status_rtl, sumber_evaluasi:this.rtlFilters.sumber_evaluasi, tahun:this.rtlFilters.tahun, per_page:10});
+        if(res&&res.success){ this.rtlList=res.data||[]; this.rtlTotalData=res.total||this.rtlList.length; this.rtlTotalPages=res.total_pages||1; this.rtlPage=res.page||p; }
+        else this.showToast(res.error||'Gagal memuat RTL','error');
+      }catch(e){ this.showToast('Error koneksi RTL','error'); } finally{ this.rtlLoading=false; }
+    },
+    async generateRtl(){
+      this.rtlGenerating=true;
+      try{ var res=await this.callServer('generate_tindak_lanjut',{sumber_evaluasi:this.rtlGenerateSumber, tahun:this.rtlGenerateTahun}); if(res&&res.success){ this.showToast('Generate RTL: '+(res.data.generated||0)+' baru','success'); this.loadRtl(1); } else this.showToast(res.error||'Gagal generate RTL','error'); }catch(e){ this.showToast('Error generate RTL','error'); } finally{ this.rtlGenerating=false; }
+    }
+  }
+};
+</script>
