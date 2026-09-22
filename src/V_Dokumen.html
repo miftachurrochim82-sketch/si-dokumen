@@ -13,7 +13,7 @@
   </div>
 
   <div class="filter-bar-analytics">
-    <div class="flex-1 w-full"><label class="filter-label">Cari</label><input type="text" class="input w-full" placeholder="Cari judul, file, catatan..." v-model="dokumenFilters.search" @input="loadDokumen(1)"></div>
+    <div class="flex-1 w-full"><label class="filter-label">Cari</label><input type="text" class="input w-full" placeholder="Cari judul, file, catatan..." v-model="dokumenFilters.search" @input="debouncedLoadDokumen()"></div>
     <div class="w-28"><label class="filter-label">Tahun</label><input type="text" class="input w-full" placeholder="2026" v-model="dokumenFilters.tahun" @change="loadDokumen(1)"></div>
     <div class="w-40"><label class="filter-label">Jenis</label>
       <select class="input w-full" v-model="dokumenFilters.jenis_dokumen_id" @change="loadDokumen(1)">
