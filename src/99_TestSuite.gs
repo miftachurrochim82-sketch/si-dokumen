@@ -20,7 +20,7 @@ function testDispatcherRouting() {
   var ok=0,fail=0; function verdict(c,l){ if(c){ ok++; Logger.log('✅ '+l); } else { fail++; Logger.log('❌ '+l); } }
   var handlers=buildLocalHandlers_(); var cfg=getAppConfig_(); var actionLevels=cfg.actionLevels||{};
   var hKeys=Object.keys(handlers);
-  verdict(hKeys.length>=90, 'localHandlers '+hKeys.length+' (target ≥90 local + 2 native)');
+  verdict(hKeys.length>=90, 'localHandlers '+hKeys.length+' (target 91 local + 2 native =93)');
   var missingLevels=hKeys.filter(function(k){ if(['exchange_platform_ticket','logout'].indexOf(k)!==-1) return false; return actionLevels[k]===undefined; });
   verdict(missingLevels.length===0, 'Semua handler punya actionLevels' + (missingLevels.length ? ' MISSING: '+missingLevels.join(', ') : ''));
   var ping=handleAction({action:'ping'});
