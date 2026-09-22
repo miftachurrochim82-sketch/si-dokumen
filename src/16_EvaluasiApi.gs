@@ -102,11 +102,19 @@ function evaluasiKadaluarsa_(params) {
 }
 
 function evaluasiFisik_(params) {
-  // E7 — fisik placeholder lokasi_fisik proxy (karena field kondisi_fisik belum ada)
+  // E7 — fisik real (v1.0.3 — field lokasi_fisik sudah ada di T_DOKUMEN header)
   var tahun = params.tahun || String(new Date().getFullYear());
   var list = getSheetData_('T_DOKUMEN').filter(function (r) { return String(r.tahun) === String(tahun); });
-  var tanpaLokasi = list.filter(function (r) { return !r.lokasi_fisik; });
-  return { success: true, data: { tahun: tahun, total: list.length, tanpa_lokasi: tanpaLokasi.length, pct_tanpa: list.length ? Math.round((tanpaLokasi.length / list.length) * 100) : 0, note: 'Field lokasi_fisik belum ada — proxy, semua dianggap tanpa lokasi (future G07)' } };
+  var tanpaLokasi = list.filter(function (r) { return !String(r.lokasi_fisik || '').trim(); });
+  var adaLokasi = list.length - tanpaLokasi.length;
+  var pctTanpa = list.length ? Math.round((tanpaLokasi.length / list.length) * 100) : 0;
+  var pctAda = list.length ? Math.round((adaLokasi / list.length) * 100) : 0;
+  return { success: true, data: {
+    tahun: tahun, total: list.length,
+    ada_lokasi: adaLokasi, tanpa_lokasi: tanpaLokasi.length,
+    pct_ada: pctAda, pct_tanpa: pctTanpa,
+    note: 'Isi kolom lokasi_fisik di T_DOKUMEN untuk tracking fisik arsip'
+  } };
 }
 
 function evaluasiAlihMedia_(params) {
