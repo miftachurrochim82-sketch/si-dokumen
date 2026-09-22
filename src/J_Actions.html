@@ -12,32 +12,39 @@ window.SidokumenActions = {
     openDokumenCreate() {
       var y = String(new Date().getFullYear());
       this.dokumenForm = {
-        id:'', pegawai_id:'', jenis_dokumen_id:'', tahun: y, bulan:'', periode_label:'',
-        judul:'', deskripsi:'', file_drive_id:'', file_name:'', file_size:0,
-        file_mime:'', status:'baru', uploaded_by:'', catatan:''
+        id: '', pegawai_id: '', jenis_dokumen_id: '', tahun: y, bulan: '', periode_label: '',
+        judul: '', deskripsi: '', file_drive_id: '', file_name: '', file_size: 0,
+        file_mime: '', status: 'baru', uploaded_by: '', catatan: ''
       };
-      // User biasa auto-fill diri sendiri
+      // Role-guard: user biasa otomatis atas nama sendiri
       if (!this.isAdmin && this.currentUser && this.currentUser.pegawai_id) {
         this.dokumenForm.pegawai_id = this.currentUser.pegawai_id;
       }
-      // Reset file input ref bila ada
-      try { if (this.$refs.fileDokumen) this.$refs.fileDokumen.value = ''; } catch (e) {}
       this.showDokumenForm = true;
+      // Reset input file setelah modal ke-render (v-if)
+      var self = this;
+      this.$nextTick(function () {
+        try { if (self.$refs && self.$refs.fileDokumen) self.$refs.fileDokumen.value = ''; } catch (e) {}
+      });
     },
 
     openDokumenEdit(r) {
+      var y = String(new Date().getFullYear());
       this.dokumenForm = Object.assign({
-        id:'', pegawai_id:'', jenis_dokumen_id:'', tahun: String(new Date().getFullYear()),
-        bulan:'', periode_label:'', judul:'', deskripsi:'',
-        file_drive_id:'', file_name:'', file_size:0, file_mime:'',
-        status:'baru', uploaded_by:'', catatan:''
+        id: '', pegawai_id: '', jenis_dokumen_id: '', tahun: y,
+        bulan: '', periode_label: '', judul: '', deskripsi: '',
+        file_drive_id: '', file_name: '', file_size: 0, file_mime: '',
+        status: 'baru', uploaded_by: '', catatan: ''
       }, r || {});
-      // Paksa pegawai_id sendiri untuk non-admin (cegah spoofing)
+      // Role-guard: cegah spoofing pegawai_id untuk non-admin
       if (!this.isAdmin && this.currentUser && this.currentUser.pegawai_id) {
         this.dokumenForm.pegawai_id = this.currentUser.pegawai_id;
       }
-      try { if (this.$refs.fileDokumen) this.$refs.fileDokumen.value = ''; } catch (e) {}
       this.showDokumenForm = true;
+      var self = this;
+      this.$nextTick(function () {
+        try { if (self.$refs && self.$refs.fileDokumen) self.$refs.fileDokumen.value = ''; } catch (e) {}
+      });
     },
 
     async simpanDokumen() {
