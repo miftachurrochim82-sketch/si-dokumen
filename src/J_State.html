@@ -1,53 +1,126 @@
 <script>
-// SIDOKUMEN - J_State.html (v1.0 full piramida 35 output — 11 sheet + 87 handler + Drive + UIUX v1.10)
+// SIDOKUMEN - J_State.html (v1.0.2 — 12 sheet + 91 handler + Drive + UIUX v1.10)
+// FIX v1.0.2:
+//   - dokumenTotalPages tidak lagi duplikat data/computed (Vue3 conflict)
+//   - Hapus dokumenPagination (server-side paginate)
+//   - filteredDokumen tetap untuk safety client, tapi paginatedDokumen return langsung
 window.SidokumenState = {
   data() {
     return {
       dataLoaded: false,
-      dashboardData: { totalDokumen:0, totalBaru:0, totalDisetujui:0, pctLengkap:0, totalPegawai:0, totalJenis:0, tahun: String(new Date().getFullYear()), role:'viewer', nama:'', totalRtl:0, rtlBaru:0, rtlSelesai:0 },
-      dokumenList: [], dokumenLoading:false, dokumenFilters:{ search:'', tahun: String(new Date().getFullYear()), jenis_dokumen_id:'', status:'', pegawai_id:'' }, dokumenPagination:{ page:1, limit:20 }, dokumenPage:1, dokumenTotalPages:1, dokumenTotalData:0,
-      showDokumenForm:false, dokumenSaving:false, dokumenForm:{ id:'', pegawai_id:'', jenis_dokumen_id:'', tahun: String(new Date().getFullYear()), bulan:'', periode_label:'', judul:'', deskripsi:'', file_drive_id:'', file_name:'', file_size:0, file_mime:'', status:'baru', uploaded_by:'', catatan:'' },
-      showStatusForm:false, statusTarget:{}, statusBaru:'disetujui', statusCatatan:'',
-      jenisList:[], kategoriList:[], periodeList:[], masterTab:'jenis',
-      showJenisForm:false, jenisSaving:false, jenisForm:{ id:'', kode:'', nama:'', kategori:'', periode:'', urutan:0, status_aktif:'true', keterangan:'' },
-      // Laporan full L1-L12
-      laporanTab:'klasifikasi', rekapTab:'klasifikasi', lapKlasData:null, lapKlasLoading:false, lapKlasTahun: String(new Date().getFullYear()), lapPegawaiData:null, lapPegawaiLoading:false, lapUnitData:null, lapUnitLoading:false, lapPeriodeData:null, lapPeriodeLoading:false, lapStatusData:null, lapStatusLoading:false, lapTerlambatData:null, lapTerlambatLoading:false, lapBermasalahData:null, lapBermasalahLoading:false, lapKepatuhanData:null, lapKepatuhanLoading:false, exportKhasResult:null, exportKhasLoading:false,
-      // Analisa A3-A10
-      analisaTab:'unit', analisaTahun: String(new Date().getFullYear()), analisaLoading:false, analisaUnitData:null, analisaTopData:null, analisaBebanData:null, analisaSlaData:null, analisaKritisData:null, analisaRetensiData:null, analisaKorelasiData:null, analisaTteData:null,
-      // Evaluasi E1-E8
-      evaluasiTab:'sla_verif', evaluasiTahun: String(new Date().getFullYear()), evaluasiLoading:false, evaluasiSlaVerifData:null, evaluasiSlaUploadData:null, evaluasiKelengkapanData:null, evaluasiFormatData:null, evaluasiKepatuhanData:null, evaluasiKadaluarsaData:null, evaluasiFisikData:null, evaluasiAlihData:null,
-      // RTL R1-R5
-      rtlList:[], rtlLoading:false, rtlSaving:false, rtlGenerating:false, rtlGenerateSumber:'semua', rtlGenerateTahun: String(new Date().getFullYear()), rtlSearch:'', rtlFilters:{ status_rtl:'', sumber_evaluasi:'', tahun:'' }, rtlPage:1, rtlTotalPages:1, rtlTotalData:0, showRtlForm:false, showRtlStatusForm:false, rtlForm:{ id:'', sumber_evaluasi:'manual', judul_rtl:'', deskripsi:'', assigned_to:'', due_date:'', status_rtl:'baru', progress_pct:0, dokumen_terkait:'', catatan:'' }, rtlStatusTarget:{}, rtlStatusBaru:'diproses', rtlStatusProgress:0, rtlStatusCatatan:'',
-      rowMenuId:null
+
+      // Dashboard
+      dashboardData: {
+        totalDokumen: 0, totalBaru: 0, totalDisetujui: 0, pctLengkap: 0,
+        totalPegawai: 0, totalJenis: 0, tahun: String(new Date().getFullYear()),
+        role: 'viewer', nama: '', totalRtl: 0, rtlBaru: 0, rtlSelesai: 0
+      },
+
+      // Dokumen
+      dokumenList: [], dokumenLoading: false,
+      dokumenFilters: { search: '', tahun: String(new Date().getFullYear()), jenis_dokumen_id: '', status: '', pegawai_id: '' },
+      dokumenPage: 1, dokumenPerPage: 20, dokumenTotalPagesServer: 1, dokumenTotalData: 0,
+      showDokumenForm: false, dokumenSaving: false,
+      dokumenForm: { id:'', pegawai_id:'', jenis_dokumen_id:'', tahun: String(new Date().getFullYear()), bulan:'', periode_label:'', judul:'', deskripsi:'', file_drive_id:'', file_name:'', file_size:0, file_mime:'', status:'baru', uploaded_by:'', catatan:'' },
+      showStatusForm: false, statusTarget: {}, statusBaru:'disetujui', statusCatatan:'',
+
+      // Master
+      jenisList: [], kategoriList: [], periodeList: [], masterTab: 'jenis',
+      showJenisForm: false, jenisSaving: false,
+      jenisForm: { id:'', kode:'', nama:'', kategori:'', periode:'', urutan:0, status_aktif:'true', keterangan:'' },
+
+      // Laporan
+      laporanTab: 'klasifikasi',
+      lapKlasData: null, lapKlasLoading: false, lapKlasTahun: String(new Date().getFullYear()),
+      lapPegawaiData: null, lapPegawaiLoading: false,
+      lapUnitData: null, lapUnitLoading: false,
+      lapPeriodeData: null, lapPeriodeLoading: false,
+      lapStatusData: null, lapStatusLoading: false,
+      lapTerlambatData: null, lapTerlambatLoading: false,
+      lapBermasalahData: null, lapBermasalahLoading: false,
+      lapKepatuhanData: null, lapKepatuhanLoading: false,
+      exportKhasResult: null, exportKhasLoading: false,
+
+      // Analisa
+      analisaTab: 'unit', analisaTahun: String(new Date().getFullYear()), analisaLoading: false,
+      analisaUnitData: null, analisaTopData: null, analisaBebanData: null, analisaSlaData: null,
+      analisaKritisData: null, analisaRetensiData: null, analisaKorelasiData: null, analisaTteData: null,
+
+      // Evaluasi
+      evaluasiTab: 'sla_verif', evaluasiTahun: String(new Date().getFullYear()), evaluasiLoading: false,
+      evaluasiSlaVerifData: null, evaluasiSlaUploadData: null, evaluasiKelengkapanData: null,
+      evaluasiFormatData: null, evaluasiKepatuhanData: null, evaluasiKadaluarsaData: null,
+      evaluasiFisikData: null, evaluasiAlihData: null,
+
+      // RTL
+      rtlList: [], rtlLoading: false, rtlSaving: false, rtlGenerating: false,
+      rtlGenerateSumber: 'semua', rtlGenerateTahun: String(new Date().getFullYear()),
+      rtlSearch: '', rtlFilters: { status_rtl:'', sumber_evaluasi:'', tahun:'' },
+      rtlPage: 1, rtlTotalPages: 1, rtlTotalData: 0,
+      showRtlForm: false, showRtlStatusForm: false,
+      rtlForm: { id:'', sumber_evaluasi:'manual', judul_rtl:'', deskripsi:'', assigned_to:'', due_date:'', status_rtl:'baru', progress_pct:0, dokumen_terkait:'', catatan:'' },
+      rtlStatusTarget: {}, rtlStatusBaru: 'diproses', rtlStatusProgress: 0, rtlStatusCatatan: '',
+
+      rowMenuId: null
     };
   },
+
   computed: {
-    dokumenFilterDefs() {
-      return [
-        { key:'search', label:'Pencarian', type:'text', placeholder:'Cari judul, file, catatan...', span:2 },
-        { key:'tahun', label:'Tahun', type:'text', placeholder:'2026' },
-        { key:'jenis_dokumen_id', label:'Jenis', type:'select', options: (this.jenisList||[]).map(function(j){ return { value:j.id, label:j.nama }; }) },
-        { key:'status', label:'Status', type:'select', options:[{value:'baru',label:'Baru'},{value:'menunggu',label:'Menunggu'},{value:'disetujui',label:'Disetujui'},{value:'revisi',label:'Revisi'},{value:'ditolak',label:'Ditolak'}] }
-      ];
-    },
+    // Dokumen filtered (client-side, karena server sudah kirim 1 page saja — filter tetap aman untuk safety)
     filteredDokumen() {
-      var f = this.dokumenFilters || {}; var q = String(f.search||'').toLowerCase().trim();
-      return (this.dokumenList||[]).filter(function(r){
+      var f = this.dokumenFilters || {};
+      var q = String(f.search || '').toLowerCase().trim();
+      return (this.dokumenList || []).filter(function (r) {
         if (f.tahun && String(r.tahun) !== String(f.tahun)) return false;
         if (f.jenis_dokumen_id && String(r.jenis_dokumen_id) !== String(f.jenis_dokumen_id)) return false;
         if (f.status && String(r.status).toLowerCase() !== String(f.status).toLowerCase()) return false;
         if (f.pegawai_id && String(r.pegawai_id) !== String(f.pegawai_id)) return false;
-        if (q) { var hay=[r.judul,r.deskripsi,r.catatan,r.file_name,r.pegawai_id].join(' ').toLowerCase(); if (hay.indexOf(q)===-1) return false; }
+        if (q) {
+          var hay = [r.judul, r.deskripsi, r.catatan, r.file_name, r.pegawai_id].join(' ').toLowerCase();
+          if (hay.indexOf(q) === -1) return false;
+        }
         return true;
       });
     },
-    paginatedDokumen() { return AppCore.paginate(this.filteredDokumen, this.dokumenPagination.page, this.dokumenPagination.limit); },
-    dokumenTotalPages() { return AppCore.pageCount(this.filteredDokumen, this.dokumenPagination.limit); },
-    chartTrenLabels() { var labels=[]; var names=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Ags','Sep','Okt','Nov','Des']; var now=new Date(); for(var i=11;i>=0;i--){ var d=new Date(now.getFullYear(), now.getMonth()-i, 1); labels.push(names[d.getMonth()]+' '+String(d.getFullYear()).slice(2)); } return labels; },
-    chartTrenDatasets() { var counts={}; var keys=[]; var now=new Date(); for(var i=11;i>=0;i--){ var d=new Date(now.getFullYear(), now.getMonth()-i, 1); var k=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); keys.push(k); counts[k]=0; } (this.dokumenList||[]).forEach(function(r){ var t=r.created_at||r.tanggal||''; var k=String(t).slice(0,7); if(counts[k]!==undefined) counts[k]++; }); return [{ label:'Upload', data:keys.map(function(k){ return counts[k]; }) }]; },
+    // Server sudah slice → jangan slice lagi
+    paginatedDokumen() { return this.filteredDokumen; },
+
+    // Chart tren 12 bulan — NOTE: berbasis dokumenList halaman aktif (bukan global).
+    // Idealnya backend kirim data agregat. Untuk sementara tetap jalan.
+    chartTrenLabels() {
+      var labels = [], names = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Ags','Sep','Okt','Nov','Des'];
+      var now = new Date();
+      for (var i = 11; i >= 0; i--) {
+        var d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        labels.push(names[d.getMonth()] + ' ' + String(d.getFullYear()).slice(2));
+      }
+      return labels;
+    },
+    chartTrenDatasets() {
+      var counts = {}, keys = [];
+      var now = new Date();
+      for (var i = 11; i >= 0; i--) {
+        var d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        var k = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+        keys.push(k); counts[k] = 0;
+      }
+      (this.dokumenList || []).forEach(function (r) {
+        var t = r.created_at || r.tanggal || '';
+        var k = String(t).slice(0, 7);
+        if (counts[k] !== undefined) counts[k]++;
+      });
+      return [{ label: 'Upload', data: keys.map(function (k) { return counts[k]; }) }];
+    },
     chartTrenColors() { return ['#065f46']; },
     chartStatusLabels() { return ['Baru','Menunggu','Disetujui','Revisi','Ditolak']; },
-    chartStatusDatasets() { var c={baru:0,menunggu:0,disetujui:0,revisi:0,ditolak:0}; (this.dokumenList||[]).forEach(function(r){ var s=String(r.status||'baru').toLowerCase(); if(c[s]!==undefined) c[s]++; }); return [{ label:'Status', data:[c.baru,c.menunggu,c.disetujui,c.revisi,c.ditolak] }]; },
+    chartStatusDatasets() {
+      var c = { baru:0, menunggu:0, disetujui:0, revisi:0, ditolak:0 };
+      (this.dokumenList || []).forEach(function (r) {
+        var s = String(r.status || 'baru').toLowerCase();
+        if (c[s] !== undefined) c[s]++;
+      });
+      return [{ label: 'Status', data: [c.baru, c.menunggu, c.disetujui, c.revisi, c.ditolak] }];
+    },
     chartStatusColors() { return ['#94a3b8','#f59e0b','#10b981','#f97316','#f43f5e']; }
   }
 };
