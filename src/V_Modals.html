@@ -1,14 +1,17 @@
-<!-- SIDOKUMEN - V_Modals.html (v1.0 — modal v-if + @close + size + UIUX v1.10) -->
-<!-- Modal Form Dokumen — size 2xl -->
-<app-modal v-if="showDokumenForm" @close="showDokumenForm=false" :title="dokumenForm.id ? 'Ubah Dokumen' : 'Upload Dokumen'" subtitle="PDF ≤10MB — campur pegawai & admin, ada jejak uploaded_by" icon="fa-solid fa-file-arrow-up" size="2xl" :loading="dokumenSaving" confirm-text="Simpan" cancel-text="Batal" @confirm="simpanDokumen()">
+<!-- SIDOKUMEN - V_Modals.html (v1.0.2 — role-guard pegawai + rapi) -->
+
+<!-- Modal Form Dokumen -->
+<app-modal v-if="showDokumenForm" @close="showDokumenForm=false" :title="dokumenForm.id ? 'Ubah Dokumen' : 'Upload Dokumen'" subtitle="PDF ≤10MB — ada jejak uploaded_by" icon="fa-solid fa-file-arrow-up" size="2xl" :loading="dokumenSaving" confirm-text="Simpan" cancel-text="Batal" @confirm="simpanDokumen()">
   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
     <div>
       <label class="form-label">Pegawai *</label>
-      <select class="input w-full" v-model="dokumenForm.pegawai_id">
+      <select class="input w-full" v-model="dokumenForm.pegawai_id" :disabled="!isAdmin">
         <option value="">— pilih pegawai —</option>
         <option v-for="p in (masterPegawaiList||[])" :key="p.pegawai_id||p.id" :value="p.pegawai_id||p.id">{{ p.nama_lengkap||p.nama }} — {{ p.nip }}</option>
       </select>
-      <p class="text-[11px] text-slate-400 mt-1">User biasa auto diri, admin bisa pilih orang lain.</p>
+      <p class="text-[11px] text-slate-400 mt-1">
+        {{ isAdmin ? 'Admin bisa pilih pegawai mana saja.' : 'User biasa — otomatis atas nama Anda.' }}
+      </p>
     </div>
     <div>
       <label class="form-label">Jenis Dokumen *</label>
@@ -22,7 +25,7 @@
       <input type="number" class="input w-full" v-model="dokumenForm.tahun" placeholder="2026">
     </div>
     <div>
-      <label class="form-label">Bulan (opsional — untuk Penilaian Bulanan)</label>
+      <label class="form-label">Bulan (opsional)</label>
       <select class="input w-full" v-model="dokumenForm.bulan">
         <option value="">Tahunan / Tidak ada bulan</option>
         <option v-for="b in 12" :key="b" :value="b">{{ b }} — {{ ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Ags','Sep','Okt','Nov','Des'][b-1] }}</option>
@@ -33,9 +36,12 @@
       <input class="input w-full" v-model.trim="dokumenForm.judul" placeholder="Mis. PK 2026 — Budi Santoso">
     </div>
     <div class="md:col-span-2">
-      <label class="form-label">File PDF * (saat buat baru wajib, ≤10MB)</label>
+      <label class="form-label">File PDF * (≤10MB)</label>
       <input type="file" ref="fileDokumen" accept="application/pdf" class="input w-full">
-      <p v-if="dokumenForm.file_name" class="text-[11px] text-slate-500 mt-1">File lama: {{ dokumenForm.file_name }} ({{ dokumenForm.file_size }} bytes) — <a v-if="dokumenForm.file_drive_id" :href="'https://drive.google.com/file/d/' + dokumenForm.file_drive_id + '/view'" target="_blank" class="text-emerald-600 underline">Lihat Drive</a></p>
+      <p v-if="dokumenForm.file_name" class="text-[11px] text-slate-500 mt-1">
+        File lama: {{ dokumenForm.file_name }} ({{ dokumenForm.file_size }} bytes)
+        <a v-if="dokumenForm.file_drive_id" :href="'https://drive.google.com/file/d/' + dokumenForm.file_drive_id + '/view'" target="_blank" class="text-emerald-600 underline ml-1">Lihat Drive</a>
+      </p>
     </div>
     <div class="md:col-span-2">
       <label class="form-label">Catatan</label>
@@ -44,23 +50,52 @@
   </div>
 </app-modal>
 
-<!-- Modal Form Jenis Dokumen — size lg -->
-<app-modal v-if="showJenisForm" @close="showJenisForm=false" :title="jenisForm.id ? 'Ubah Jenis Dokumen' : 'Tambah Jenis Dokumen'" subtitle="Master jenis dokumen fleksibel — 10 awal + bisa tambah" icon="fa-solid fa-tags" size="lg" :loading="jenisSaving" confirm-text="Simpan" cancel-text="Batal" @confirm="simpanJenis()">
+<!-- Modal Form Jenis Dokumen -->
+<app-modal v-if="showJenisForm" @close="showJenisForm=false" :title="jenisForm.id ? 'Ubah Jenis Dokumen' : 'Tambah Jenis Dokumen'" subtitle="Master jenis dokumen fleksibel" icon="fa-solid fa-tags" size="lg" :loading="jenisSaving" confirm-text="Simpan" cancel-text="Batal" @confirm="simpanJenis()">
   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
     <div><label class="form-label">Kode *</label><input class="input w-full" v-model.trim="jenisForm.kode" placeholder="PK"></div>
     <div><label class="form-label">Nama *</label><input class="input w-full" v-model.trim="jenisForm.nama" placeholder="Perjanjian Kinerja"></div>
-    <div><label class="form-label">Kategori</label><select class="input w-full" v-model="jenisForm.kategori"><option value="">— pilih —</option><option value="KINERJA_UTAMA">Kinerja Utama</option><option value="PERUBAHAN">Perubahan</option><option value="PENILAIAN">Penilaian</option><option value="LAPORAN">Laporan</option><option value="LAINNYA">Lainnya</option></select></div>
-    <div><label class="form-label">Periode</label><select class="input w-full" v-model="jenisForm.periode"><option value="">— pilih —</option><option value="Tahunan">Tahunan</option><option value="Bulanan">Bulanan</option><option value="Periodik">Periodik</option><option value="Fleksibel">Fleksibel</option></select></div>
+    <div><label class="form-label">Kategori</label>
+      <select class="input w-full" v-model="jenisForm.kategori">
+        <option value="">— pilih —</option>
+        <option value="KINERJA_UTAMA">Kinerja Utama</option>
+        <option value="PERUBAHAN">Perubahan</option>
+        <option value="PENILAIAN">Penilaian</option>
+        <option value="LAPORAN">Laporan</option>
+        <option value="LAINNYA">Lainnya</option>
+      </select>
+    </div>
+    <div><label class="form-label">Periode</label>
+      <select class="input w-full" v-model="jenisForm.periode">
+        <option value="">— pilih —</option>
+        <option value="Tahunan">Tahunan</option>
+        <option value="Bulanan">Bulanan</option>
+        <option value="Periodik">Periodik</option>
+        <option value="Fleksibel">Fleksibel</option>
+      </select>
+    </div>
     <div><label class="form-label">Urutan</label><input type="number" class="input w-full" v-model.number="jenisForm.urutan"></div>
-    <div><label class="form-label">Status</label><select class="input w-full" v-model="jenisForm.status_aktif"><option value="true">Aktif</option><option value="false">Nonaktif</option></select></div>
+    <div><label class="form-label">Status</label>
+      <select class="input w-full" v-model="jenisForm.status_aktif">
+        <option value="true">Aktif</option>
+        <option value="false">Nonaktif</option>
+      </select>
+    </div>
     <div class="md:col-span-2"><label class="form-label">Keterangan</label><textarea class="input w-full" rows="2" v-model.trim="jenisForm.keterangan"></textarea></div>
   </div>
 </app-modal>
 
-<!-- Modal Status Verifikasi — size md -->
+<!-- Modal Status Verifikasi -->
 <app-modal v-if="showStatusForm" @close="showStatusForm=false" :title="'Verifikasi — ' + (statusTarget.judul||statusTarget.file_name||'')" subtitle="Ubah status dokumen + catatan" icon="fa-solid fa-check" size="md" :loading="dokumenSaving" confirm-text="Simpan Status" cancel-text="Batal" @confirm="verifikasiDokumen()">
   <div class="space-y-3">
-    <div><label class="form-label">Status Baru</label><select class="input w-full" v-model="statusBaru"><option value="menunggu">Menunggu</option><option value="disetujui">Disetujui</option><option value="revisi">Revisi</option><option value="ditolak">Ditolak</option></select></div>
+    <div><label class="form-label">Status Baru</label>
+      <select class="input w-full" v-model="statusBaru">
+        <option value="menunggu">Menunggu</option>
+        <option value="disetujui">Disetujui</option>
+        <option value="revisi">Revisi</option>
+        <option value="ditolak">Ditolak</option>
+      </select>
+    </div>
     <div><label class="form-label">Catatan</label><textarea class="input w-full" rows="3" v-model.trim="statusCatatan" placeholder="Catatan verifikasi"></textarea></div>
   </div>
 </app-modal>
