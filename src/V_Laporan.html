@@ -1,11 +1,11 @@
-<!-- SIDOKUMEN - V_Laporan.html (v1.5 full — L1-L12 full piramida + UIUX v1.10) -->
+<!-- SIDOKUMEN - V_Laporan.html (v1.0.2 — L4/L5/L6/L7/L8/L9/L10/L11/L12 sinkron backend) -->
 <section v-if="currentPage === 'laporan'" class="space-y-6 animate-fade-in">
   <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-3">
     <div>
       <h2 class="text-2xl font-bold tracking-tight flex items-center gap-2 text-slate-800 dark:text-white">
         <i class="fa-solid fa-file-lines text-emerald-600 dark:text-emerald-400"></i> Laporan — 12 Output
       </h2>
-      <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">L1 Daftar, L2 per Jenis, L3 per Pegawai, L4 per Jenis, L5 per Unit, L6 per Pegawai, L7 Periode, L8 Status, L9 Keterlambatan, L10 File Bermasalah, L11 Kepatuhan, L12 Khas 7 sheet</p>
+      <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">L4 per Jenis, L5 per Unit, L6 per Pegawai, L7 Periode, L8 Status, L9 Keterlambatan, L10 File Bermasalah, L11 Kepatuhan, L12 Khas 7 sheet</p>
     </div>
   </div>
 
@@ -22,68 +22,236 @@
     <button class="btn" :class="laporanTab==='bermasalah' ? 'btn-primary' : 'btn-ghost'" @click="laporanTab='bermasalah'">L10 Bermasalah</button>
   </div>
 
-  <!-- L4 -->
+  <!-- L4 Rekap per Jenis -->
   <div v-if="laporanTab==='klasifikasi'" class="card space-y-4">
-    <div class="filter-bar-analytics"><h3 class="font-bold mr-auto"><i class="fa-solid fa-tags text-emerald-500"></i> L4 Rekap per Jenis Dokumen</h3><div class="w-28"><label class="filter-label">Tahun</label><input type="text" class="input w-full" v-model="lapKlasTahun"></div><button class="btn btn-primary" @click="loadRekapKlasifikasi()" :disabled="lapKlasLoading"><i class="fa-solid fa-rotate"></i> {{ lapKlasLoading ? 'Memuat...' : 'Tampilkan' }}</button></div>
+    <div class="filter-bar-analytics">
+      <h3 class="font-bold mr-auto"><i class="fa-solid fa-tags text-emerald-500"></i> L4 Rekap per Jenis Dokumen</h3>
+      <div class="w-28"><label class="filter-label">Tahun</label><input type="text" class="input w-full" v-model="lapKlasTahun"></div>
+      <button class="btn btn-primary" @click="loadRekapKlasifikasi()" :disabled="lapKlasLoading"><i class="fa-solid fa-rotate"></i> {{ lapKlasLoading ? 'Memuat...' : 'Tampilkan' }}</button>
+    </div>
     <app-skeleton v-if="lapKlasLoading && !lapKlasData" type="table"></app-skeleton>
     <div v-else-if="lapKlasData">
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3"><app-stat-card title="Total" :value="lapKlasData.total" icon="fa-solid fa-file-lines" color="emerald" :subtext="lapKlasData.tahun"></app-stat-card><app-stat-card title="Jenis" :value="(lapKlasData.rekap||[]).length" icon="fa-solid fa-tags" color="sky" subtext="kategori"></app-stat-card><app-stat-card title="Pegawai" :value="lapKlasData.pegawaiTotal||0" icon="fa-solid fa-users" color="amber" subtext="total"></app-stat-card></div>
-      <div class="table-scroll"><table class="w-full text-xs"><thead class="text-slate-500 border-b"><tr><th class="text-left py-2 px-2 min-w-[180px]">Jenis</th><th class="text-right py-2 px-2 min-w-[70px]">Jml</th><th class="text-right py-2 px-2 min-w-[70px]">%</th></tr></thead><tbody class="divide-y"><tr v-for="r in lapKlasData.rekap" :key="r.jenis_dokumen_id"><td class="py-2 px-2">{{ r.nama||namaJenisDokumen_(r.jenis_dokumen_id) }}</td><td class="py-2 px-2 text-right font-bold">{{ r.jml||r.jumlah }}</td><td class="py-2 px-2 text-right">{{ r.pct }}%</td></tr></tbody></table></div>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
+        <app-stat-card title="Total Dokumen" :value="lapKlasData.total" icon="fa-solid fa-file-lines" color="emerald" :subtext="lapKlasData.tahun"></app-stat-card>
+        <app-stat-card title="Jenis" :value="(lapKlasData.rekap||[]).length" icon="fa-solid fa-tags" color="sky" subtext="kategori"></app-stat-card>
+        <app-stat-card title="Total Pegawai" :value="lapKlasData.total_pegawai||0" icon="fa-solid fa-users" color="amber" subtext="denominator"></app-stat-card>
+      </div>
+      <div class="table-scroll">
+        <table class="w-full text-xs">
+          <thead class="text-slate-500 border-b"><tr><th class="text-left py-2 px-2 min-w-[180px]">Jenis</th><th class="text-right py-2 px-2 min-w-[70px]">Jml</th><th class="text-right py-2 px-2 min-w-[70px]">%</th></tr></thead>
+          <tbody class="divide-y">
+            <tr v-for="r in (lapKlasData.rekap||[])" :key="r.jenis_dokumen_id">
+              <td class="py-2 px-2">{{ namaJenisDokumen_(r.jenis_dokumen_id) }}</td>
+              <td class="py-2 px-2 text-right font-bold">{{ r.jml }}</td>
+              <td class="py-2 px-2 text-right">{{ r.pct }}%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 
-  <!-- L6 -->
+  <!-- L6 Rekap per Pegawai -->
   <div v-if="laporanTab==='pegawai'" class="card space-y-4">
-    <div class="filter-bar-analytics"><h3 class="font-bold mr-auto"><i class="fa-solid fa-user text-emerald-500"></i> L6 Rekap per Pegawai — Matrix</h3><div class="w-28"><label class="filter-label">Tahun</label><input type="text" class="input w-full" v-model="lapKlasTahun"></div><button class="btn btn-primary" @click="loadRekapPegawai()" :disabled="lapPegawaiLoading"><i class="fa-solid fa-rotate"></i> {{ lapPegawaiLoading ? 'Memuat...' : 'Tampilkan' }}</button></div>
+    <div class="filter-bar-analytics">
+      <h3 class="font-bold mr-auto"><i class="fa-solid fa-user text-emerald-500"></i> L6 Rekap per Pegawai</h3>
+      <div class="w-28"><label class="filter-label">Tahun</label><input type="text" class="input w-full" v-model="lapKlasTahun"></div>
+      <button class="btn btn-primary" @click="loadRekapPegawai()" :disabled="lapPegawaiLoading"><i class="fa-solid fa-rotate"></i> {{ lapPegawaiLoading ? 'Memuat...' : 'Tampilkan' }}</button>
+    </div>
     <app-skeleton v-if="lapPegawaiLoading && !lapPegawaiData" type="table"></app-skeleton>
-    <div v-else-if="lapPegawaiData" class="table-scroll">
-      <table class="w-full text-xs"><thead class="border-b bg-slate-50 dark:bg-slate-800/50"><tr><th class="text-left py-2 px-3 min-w-[200px]">Pegawai</th><th class="text-left py-2 px-3 min-w-[80px]">Unit</th><th class="text-right py-2 px-3 min-w-[80px]">Lengkap</th><th class="text-right py-2 px-3 min-w-[80px]">%</th><th class="text-left py-2 px-3 min-w-[200px]">Belum</th><th class="text-left py-2 px-3 min-w-[100px]">Status</th></tr></thead><tbody class="divide-y"><tr v-for="r in lapPegawaiData.rekap" :key="r.pegawai_id"><td class="py-2 px-3">{{ r.nama }}</td><td class="py-2 px-3">{{ r.unit_id||'—' }}</td><td class="py-2 px-3 text-right">{{ r.jml||r.total_dokumen }}/{{ r.total_jenis }}</td><td class="py-2 px-3 text-right"><div class="progress-track"><div class="progress-fill" :style="{ width: r.pct + '%' }"></div></div> {{ r.pct }}%</td><td class="py-2 px-3">{{ (r.belum_lengkap||[]).join(', ')||'—' }}</td><td class="py-2 px-3"><app-badge size="sm" :status="r.pct>=100 ? 'disetujui' : 'menunggu'" :label="r.pct>=100 ? 'lengkap' : 'belum'"></app-badge></td></tr></tbody></table>
+    <div v-else-if="lapPegawaiData">
+      <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 mb-3">
+        <app-stat-card title="Total Pegawai" :value="lapPegawaiData.total_pegawai" icon="fa-solid fa-users" color="emerald" :subtext="lapPegawaiData.tahun"></app-stat-card>
+        <app-stat-card title="Lengkap" :value="(lapPegawaiData.lengkap||[]).length" icon="fa-solid fa-check" color="sky" subtext="100%"></app-stat-card>
+        <app-stat-card title="Belum" :value="(lapPegawaiData.belum_lengkap||[]).length" icon="fa-solid fa-triangle-exclamation" color="amber" subtext="perlu R1"></app-stat-card>
+        <app-stat-card title="Total Dokumen" :value="lapPegawaiData.total_dokumen" icon="fa-solid fa-file-lines" color="purple" :subtext="lapPegawaiData.total_jenis + ' jenis'"></app-stat-card>
+      </div>
+      <div class="table-scroll">
+        <table class="w-full text-xs">
+          <thead class="border-b bg-slate-50 dark:bg-slate-800/50">
+            <tr>
+              <th class="text-left py-2 px-3 min-w-[200px]">Pegawai</th>
+              <th class="text-left py-2 px-3 min-w-[100px]">NIP</th>
+              <th class="text-left py-2 px-3 min-w-[100px]">Unit</th>
+              <th class="text-right py-2 px-3 min-w-[100px]">Lengkap</th>
+              <th class="text-right py-2 px-3 min-w-[100px]">%</th>
+              <th class="text-left py-2 px-3 min-w-[120px]">Status</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y">
+            <tr v-for="r in (lapPegawaiData.rekap||[])" :key="r.pegawai_id">
+              <td class="py-2 px-3">{{ r.nama }}</td>
+              <td class="py-2 px-3 font-mono text-[11px]">{{ r.nip||'—' }}</td>
+              <td class="py-2 px-3">{{ r.unit_id||'—' }}</td>
+              <td class="py-2 px-3 text-right">{{ r.jml }}/{{ r.total_jenis }} <span class="text-rose-500">(-{{ r.total_jenis - r.jml }})</span></td>
+              <td class="py-2 px-3 text-right"><div class="progress-track"><div class="progress-fill" :style="{ width: clampPct_(r.pct) + '%' }"></div></div> {{ r.pct }}%</td>
+              <td class="py-2 px-3"><app-badge size="sm" :status="r.pct>=100 ? 'disetujui' : 'menunggu'" :label="r.pct>=100 ? 'lengkap' : 'belum'"></app-badge></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 
-  <!-- L5 -->
+  <!-- L5 Rekap per Unit -->
   <div v-if="laporanTab==='unit'" class="card space-y-4">
-    <div class="filter-bar-analytics"><h3 class="font-bold mr-auto"><i class="fa-solid fa-building text-emerald-500"></i> L5 Rekap per Unit</h3><div class="w-28"><label class="filter-label">Tahun</label><input type="text" class="input w-full" v-model="lapKlasTahun"></div><button class="btn btn-primary" @click="loadRekapUnit()" :disabled="lapUnitLoading"><i class="fa-solid fa-rotate"></i> {{ lapUnitLoading ? 'Memuat...' : 'Tampilkan' }}</button></div>
+    <div class="filter-bar-analytics">
+      <h3 class="font-bold mr-auto"><i class="fa-solid fa-building text-emerald-500"></i> L5 Rekap per Unit</h3>
+      <div class="w-28"><label class="filter-label">Tahun</label><input type="text" class="input w-full" v-model="lapKlasTahun"></div>
+      <button class="btn btn-primary" @click="loadRekapUnit()" :disabled="lapUnitLoading"><i class="fa-solid fa-rotate"></i> {{ lapUnitLoading ? 'Memuat...' : 'Tampilkan' }}</button>
+    </div>
     <app-skeleton v-if="lapUnitLoading && !lapUnitData" type="table"></app-skeleton>
-    <div v-else-if="lapUnitData" class="table-scroll"><table class="w-full text-xs"><thead class="border-b"><tr><th class="text-left py-2 px-2 min-w-[180px]">Unit</th><th class="text-right py-2 px-2 min-w-[70px]">Jml</th><th class="text-right py-2 px-2 min-w-[70px]">%</th></tr></thead><tbody class="divide-y"><tr v-for="r in lapUnitData.rekap||lapUnitData.distribusi||[]" :key="r.unit_id||r.id"><td class="py-2 px-2">{{ r.unit_id||r.nama||r.id }}</td><td class="py-2 px-2 text-right font-bold">{{ r.jml||r.jumlah }}</td><td class="py-2 px-2 text-right">{{ r.pct||'—' }}{{ r.pct ? '%' : '' }}</td></tr></tbody></table></div>
+    <div v-else-if="lapUnitData" class="table-scroll">
+      <table class="w-full text-xs">
+        <thead class="border-b"><tr><th class="text-left py-2 px-2 min-w-[180px]">Unit</th><th class="text-right py-2 px-2 min-w-[70px]">Jml</th><th class="text-right py-2 px-2 min-w-[70px]">%</th></tr></thead>
+        <tbody class="divide-y">
+          <tr v-for="r in (lapUnitData.rekap||[])" :key="r.unit_id">
+            <td class="py-2 px-2">{{ r.unit_id }}</td>
+            <td class="py-2 px-2 text-right font-bold">{{ r.jml }}</td>
+            <td class="py-2 px-2 text-right">{{ pct_(r.jml, lapUnitData.total) }}%</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 
-  <!-- L11 + L12 -->
+  <!-- L11 Kepatuhan + L12 Export -->
   <div v-if="laporanTab==='kepatuhan'" class="card space-y-4">
-    <div class="filter-bar-analytics"><h3 class="font-bold mr-auto"><i class="fa-solid fa-percent text-emerald-500"></i> L11 Kepatuhan Upload + L12 Khas 7 Sheet</h3><div class="w-28"><label class="filter-label">Tahun</label><input type="text" class="input w-full" v-model="lapKlasTahun"></div><button class="btn btn-primary" @click="loadKepatuhan()" :disabled="lapKepatuhanLoading"><i class="fa-solid fa-rotate"></i> {{ lapKepatuhanLoading ? 'Memuat...' : 'Tampilkan' }}</button><button class="btn btn-ghost" @click="exportKhas()" :disabled="exportKhasLoading"><i class="fa-solid fa-file-excel"></i> Export Khas L12</button></div>
+    <div class="filter-bar-analytics">
+      <h3 class="font-bold mr-auto"><i class="fa-solid fa-percent text-emerald-500"></i> L11 Kepatuhan Upload</h3>
+      <div class="w-28"><label class="filter-label">Tahun</label><input type="text" class="input w-full" v-model="lapKlasTahun"></div>
+      <button class="btn btn-primary" @click="loadKepatuhan()" :disabled="lapKepatuhanLoading"><i class="fa-solid fa-rotate"></i> {{ lapKepatuhanLoading ? 'Memuat...' : 'Tampilkan' }}</button>
+      <button class="btn btn-ghost" @click="exportKhas()" :disabled="exportKhasLoading"><i class="fa-solid fa-file-excel"></i> Export Khas L12</button>
+    </div>
     <app-skeleton v-if="lapKepatuhanLoading && !lapKepatuhanData" type="table"></app-skeleton>
     <div v-else-if="lapKepatuhanData">
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3"><app-stat-card title="Total" :value="lapKepatuhanData.total" icon="fa-solid fa-file-lines" color="emerald" :subtext="lapKepatuhanData.tahun"></app-stat-card><app-stat-card title="Tepat Waktu" :value="lapKepatuhanData.tepat_waktu" icon="fa-solid fa-check" color="sky" :subtext="lapKepatuhanData.pct + '% patuh'"></app-stat-card><app-stat-card title="Terlambat" :value="lapKepatuhanData.terlambat||0" icon="fa-solid fa-clock" color="amber" subtext="perlu R3"></app-stat-card></div>
-      <div class="table-scroll"><table class="w-full text-xs"><thead class="border-b"><tr><th class="text-left py-2 px-2 min-w-[180px]">Jenis</th><th class="text-right py-2 px-2 min-w-[60px]">Total</th><th class="text-right py-2 px-2 min-w-[80px]">Tepat</th><th class="text-right py-2 px-2 min-w-[60px]">%</th></tr></thead><tbody class="divide-y"><tr v-for="r in lapKepatuhanData.rekap" :key="r.jenis_dokumen_id"><td class="py-2 px-2">{{ r.nama }}</td><td class="py-2 px-2 text-right">{{ r.total }}</td><td class="py-2 px-2 text-right">{{ r.tepat_waktu }}</td><td class="py-2 px-2 text-right font-bold">{{ r.pct }}%</td></tr></tbody></table></div>
-      <div v-if="exportKhasResult" class="mt-3 p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded text-xs"><i class="fa-solid fa-check text-emerald-500"></i> Export Khas L12 jadi: <a :href="exportKhasResult.file_url" target="_blank" class="text-emerald-600 underline">{{ exportKhasResult.file_url }}</a> ({{ exportKhasResult.sheet_count||7 }} sheet: Cover,Ringkasan,Rekap Jenis,Unit,Pegawai,Kepatuhan,TTD)</div>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
+        <app-stat-card title="Total" :value="lapKepatuhanData.total" icon="fa-solid fa-file-lines" color="emerald" :subtext="lapKepatuhanData.tahun"></app-stat-card>
+        <app-stat-card title="Tepat Waktu" :value="lapKepatuhanData.tepat_waktu" icon="fa-solid fa-check" color="sky" :subtext="lapKepatuhanData.pct + '% patuh'"></app-stat-card>
+        <app-stat-card title="Terlambat" :value="lapKepatuhanData.total - lapKepatuhanData.tepat_waktu" icon="fa-solid fa-clock" color="amber" subtext="perlu R3"></app-stat-card>
+      </div>
+      <div class="table-scroll">
+        <table class="w-full text-xs">
+          <thead class="border-b"><tr><th class="text-left py-2 px-2 min-w-[180px]">Jenis</th><th class="text-right py-2 px-2 min-w-[60px]">Total</th><th class="text-right py-2 px-2 min-w-[80px]">Tepat</th><th class="text-right py-2 px-2 min-w-[60px]">%</th></tr></thead>
+          <tbody class="divide-y">
+            <tr v-for="r in (lapKepatuhanData.rekap||[])" :key="r.jenis_dokumen_id">
+              <td class="py-2 px-2">{{ r.nama }}</td>
+              <td class="py-2 px-2 text-right">{{ r.total }}</td>
+              <td class="py-2 px-2 text-right">{{ r.tepat_waktu }}</td>
+              <td class="py-2 px-2 text-right font-bold">{{ r.pct }}%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div v-if="exportKhasResult" class="mt-3 p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded text-xs">
+        <i class="fa-solid fa-check text-emerald-500"></i> Export Khas L12 jadi:
+        <a :href="exportKhasResult.file_url" target="_blank" class="text-emerald-600 underline">{{ exportKhasResult.file_url }}</a>
+        ({{ exportKhasResult.sheets||7 }} sheet: Cover, Ringkasan, Rekap Jenis, Unit, Pegawai, Kepatuhan, TTD)
+      </div>
     </div>
   </div>
 
   <!-- L7 Periode -->
   <div v-if="laporanTab==='periode'" class="card space-y-4">
-    <div class="filter-bar-analytics"><h3 class="font-bold mr-auto"><i class="fa-solid fa-calendar text-emerald-500"></i> L7 Rekap per Periode (Bulan)</h3><div class="w-28"><label class="filter-label">Tahun</label><input type="text" class="input w-full" v-model="lapKlasTahun"></div><button class="btn btn-primary" @click="loadRekapPeriode()" :disabled="lapPeriodeLoading"><i class="fa-solid fa-rotate"></i> Tampilkan</button></div>
+    <div class="filter-bar-analytics">
+      <h3 class="font-bold mr-auto"><i class="fa-solid fa-calendar text-emerald-500"></i> L7 Rekap per Periode</h3>
+      <div class="w-28"><label class="filter-label">Tahun</label><input type="text" class="input w-full" v-model="lapKlasTahun"></div>
+      <button class="btn btn-primary" @click="loadRekapPeriode()" :disabled="lapPeriodeLoading"><i class="fa-solid fa-rotate"></i> Tampilkan</button>
+    </div>
     <app-skeleton v-if="lapPeriodeLoading && !lapPeriodeData" type="table"></app-skeleton>
-    <div v-else-if="lapPeriodeData" class="table-scroll"><table class="w-full text-xs"><thead class="border-b"><tr><th class="text-left py-2 px-2 min-w-[120px]">Periode</th><th class="text-right py-2 px-2 min-w-[70px]">Jml</th></tr></thead><tbody class="divide-y"><tr v-for="r in lapPeriodeData.rekap||lapPeriodeData.periode||[]" :key="r.bulan||r.periode||r.id"><td class="py-2 px-2">{{ r.nama_bulan||r.bulan||r.periode }}</td><td class="py-2 px-2 text-right font-bold">{{ r.jml||r.jumlah }}</td></tr></tbody></table></div>
+    <div v-else-if="lapPeriodeData" class="table-scroll">
+      <table class="w-full text-xs">
+        <thead class="border-b"><tr><th class="text-left py-2 px-2 min-w-[120px]">Periode</th><th class="text-right py-2 px-2 min-w-[70px]">Jml</th></tr></thead>
+        <tbody class="divide-y">
+          <tr v-for="r in (lapPeriodeData.rekap||[])" :key="r.periode">
+            <td class="py-2 px-2 font-mono">{{ r.periode }}</td>
+            <td class="py-2 px-2 text-right font-bold">{{ r.jml }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 
   <!-- L8 Status -->
   <div v-if="laporanTab==='status'" class="card space-y-4">
-    <div class="filter-bar-analytics"><h3 class="font-bold mr-auto"><i class="fa-solid fa-flag text-emerald-500"></i> L8 Rekap per Status</h3><div class="w-28"><label class="filter-label">Tahun</label><input type="text" class="input w-full" v-model="lapKlasTahun"></div><button class="btn btn-primary" @click="loadRekapStatus()" :disabled="lapStatusLoading"><i class="fa-solid fa-rotate"></i> Tampilkan</button></div>
+    <div class="filter-bar-analytics">
+      <h3 class="font-bold mr-auto"><i class="fa-solid fa-flag text-emerald-500"></i> L8 Rekap per Status</h3>
+      <div class="w-28"><label class="filter-label">Tahun</label><input type="text" class="input w-full" v-model="lapKlasTahun"></div>
+      <button class="btn btn-primary" @click="loadRekapStatus()" :disabled="lapStatusLoading"><i class="fa-solid fa-rotate"></i> Tampilkan</button>
+    </div>
     <app-skeleton v-if="lapStatusLoading && !lapStatusData" type="table"></app-skeleton>
-    <div v-else-if="lapStatusData" class="table-scroll"><table class="w-full text-xs"><thead class="border-b"><tr><th class="text-left py-2 px-2 min-w-[120px]">Status</th><th class="text-right py-2 px-2 min-w-[70px]">Jml</th><th class="text-right py-2 px-2 min-w-[70px]">%</th></tr></thead><tbody class="divide-y"><tr v-for="r in lapStatusData.rekap||lapStatusData.status||[]" :key="r.status"><td class="py-2 px-2"><app-badge size="sm" :status="badgeStatusDokumen(r.status)" :label="r.status"></app-badge></td><td class="py-2 px-2 text-right font-bold">{{ r.jml||r.jumlah }}</td><td class="py-2 px-2 text-right">{{ r.pct }}%</td></tr></tbody></table></div>
+    <div v-else-if="lapStatusData" class="table-scroll">
+      <table class="w-full text-xs">
+        <thead class="border-b"><tr><th class="text-left py-2 px-2 min-w-[120px]">Status</th><th class="text-right py-2 px-2 min-w-[70px]">Jml</th><th class="text-right py-2 px-2 min-w-[70px]">%</th></tr></thead>
+        <tbody class="divide-y">
+          <tr v-for="r in (lapStatusData.rekap||[])" :key="r.status">
+            <td class="py-2 px-2"><app-badge size="sm" :status="badgeStatusDokumen(r.status)" :label="r.status"></app-badge></td>
+            <td class="py-2 px-2 text-right font-bold">{{ r.jml }}</td>
+            <td class="py-2 px-2 text-right">{{ pct_(r.jml, lapStatusData.total) }}%</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 
-  <!-- L9 Terlambat -->
+  <!-- L9 Keterlambatan -->
   <div v-if="laporanTab==='terlambat'" class="card space-y-4">
-    <div class="filter-bar-analytics"><h3 class="font-bold mr-auto"><i class="fa-solid fa-clock text-amber-500"></i> L9 Keterlambatan vs T_JADWAL</h3><div class="w-28"><label class="filter-label">Tahun</label><input type="text" class="input w-full" v-model="lapKlasTahun"></div><button class="btn btn-primary" @click="loadKeterlambatan()" :disabled="lapTerlambatLoading"><i class="fa-solid fa-rotate"></i> Tampilkan</button></div>
+    <div class="filter-bar-analytics">
+      <h3 class="font-bold mr-auto"><i class="fa-solid fa-clock text-amber-500"></i> L9 Keterlambatan vs T_JADWAL</h3>
+      <div class="w-28"><label class="filter-label">Tahun</label><input type="text" class="input w-full" v-model="lapKlasTahun"></div>
+      <button class="btn btn-primary" @click="loadKeterlambatan()" :disabled="lapTerlambatLoading"><i class="fa-solid fa-rotate"></i> Tampilkan</button>
+    </div>
     <app-skeleton v-if="lapTerlambatLoading && !lapTerlambatData" type="table"></app-skeleton>
-    <div v-else-if="lapTerlambatData" class="table-scroll"><table class="w-full text-xs"><thead class="border-b"><tr><th class="text-left py-2 px-2 min-w-[200px]">Dokumen</th><th class="text-left py-2 px-2 min-w-[120px]">Deadline</th><th class="text-right py-2 px-2 min-w-[80px]">Selisih Hari</th></tr></thead><tbody class="divide-y"><tr v-for="r in lapTerlambatData.terlambat||lapTerlambatData.rincian||[]" :key="r.id"><td class="py-2 px-2">{{ r.judul||r.id }} • {{ namaPegawai_(r.pegawai_id) }}</td><td class="py-2 px-2">{{ fmtTgl(r.deadline_tgl||r.deadline) }}</td><td class="py-2 px-2 text-right font-bold text-amber-600">{{ r.selisih_hari }} hari</td></tr></tbody></table></div>
+    <div v-else-if="lapTerlambatData">
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
+        <app-stat-card title="Total Dokumen" :value="lapTerlambatData.total" icon="fa-solid fa-file-lines" color="emerald" :subtext="lapTerlambatData.tahun"></app-stat-card>
+        <app-stat-card title="Terlambat" :value="lapTerlambatData.terlambat_total" icon="fa-solid fa-clock" color="rose" subtext="perlu tindak"></app-stat-card>
+        <app-stat-card title="Tepat Waktu" :value="lapTerlambatData.total - lapTerlambatData.terlambat_total" icon="fa-solid fa-check" color="sky" subtext="OK"></app-stat-card>
+      </div>
+      <div class="table-scroll">
+        <table class="w-full text-xs">
+          <thead class="border-b"><tr><th class="text-left py-2 px-2 min-w-[140px]">ID</th><th class="text-left py-2 px-2 min-w-[160px]">Pegawai</th><th class="text-left py-2 px-2 min-w-[120px]">Jenis</th><th class="text-left py-2 px-2 min-w-[100px]">Upload</th><th class="text-left py-2 px-2 min-w-[100px]">Deadline</th><th class="text-right py-2 px-2 min-w-[80px]">Hari</th></tr></thead>
+          <tbody class="divide-y">
+            <tr v-for="r in (lapTerlambatData.list||[])" :key="r.id">
+              <td class="py-2 px-2 font-mono text-[11px]">{{ r.id }}</td>
+              <td class="py-2 px-2">{{ namaPegawai_(r.pegawai_id) }}</td>
+              <td class="py-2 px-2">{{ namaJenisDokumen_(r.jenis_dokumen_id) }}</td>
+              <td class="py-2 px-2">{{ fmtTgl(r.tgl_upload) }}</td>
+              <td class="py-2 px-2">{{ fmtTgl(r.deadline) }}</td>
+              <td class="py-2 px-2 text-right font-bold text-rose-600">+{{ r.selisih_hari }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
 
-  <!-- L10 Bermasalah -->
+  <!-- L10 File Bermasalah -->
   <div v-if="laporanTab==='bermasalah'" class="card space-y-4">
-    <div class="filter-bar-analytics"><h3 class="font-bold mr-auto"><i class="fa-solid fa-triangle-exclamation text-rose-500"></i> L10 File Bermasalah</h3><div class="w-28"><label class="filter-label">Tahun</label><input type="text" class="input w-full" v-model="lapKlasTahun"></div><button class="btn btn-primary" @click="loadFileBermasalah()" :disabled="lapBermasalahLoading"><i class="fa-solid fa-rotate"></i> Tampilkan</button></div>
+    <div class="filter-bar-analytics">
+      <h3 class="font-bold mr-auto"><i class="fa-solid fa-triangle-exclamation text-rose-500"></i> L10 File Bermasalah</h3>
+      <div class="w-28"><label class="filter-label">Tahun</label><input type="text" class="input w-full" v-model="lapKlasTahun"></div>
+      <button class="btn btn-primary" @click="loadFileBermasalah()" :disabled="lapBermasalahLoading"><i class="fa-solid fa-rotate"></i> Tampilkan</button>
+    </div>
     <app-skeleton v-if="lapBermasalahLoading && !lapBermasalahData" type="table"></app-skeleton>
-    <div v-else-if="lapBermasalahData" class="table-scroll"><table class="w-full text-xs"><thead class="border-b"><tr><th class="text-left py-2 px-2 min-w-[200px]">File</th><th class="text-left py-2 px-2 min-w-[240px]">Issues</th></tr></thead><tbody class="divide-y"><tr v-for="r in lapBermasalahData.bermasalah||lapBermasalahData.rincian||[]" :key="r.id"><td class="py-2 px-2">{{ r.file_name||r.id }}</td><td class="py-2 px-2">{{ (r.issues||[r.alasan]||[]).join(', ') }}</td></tr></tbody></table></div>
+    <div v-else-if="lapBermasalahData">
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
+        <app-stat-card title="Total Dokumen" :value="lapBermasalahData.total" icon="fa-solid fa-file-lines" color="emerald" :subtext="lapBermasalahData.tahun"></app-stat-card>
+        <app-stat-card title="Bermasalah" :value="lapBermasalahData.bermasalah_total" icon="fa-solid fa-triangle-exclamation" color="rose" subtext="perlu R2"></app-stat-card>
+        <app-stat-card title="Aman" :value="lapBermasalahData.total - lapBermasalahData.bermasalah_total" icon="fa-solid fa-check" color="sky" subtext="OK"></app-stat-card>
+      </div>
+      <div class="table-scroll">
+        <table class="w-full text-xs">
+          <thead class="border-b"><tr><th class="text-left py-2 px-2 min-w-[140px]">ID</th><th class="text-left py-2 px-2 min-w-[160px]">File</th><th class="text-left py-2 px-2 min-w-[240px]">Issues</th></tr></thead>
+          <tbody class="divide-y">
+            <tr v-for="r in (lapBermasalahData.list||[])" :key="r.id">
+              <td class="py-2 px-2 font-mono text-[11px]">{{ r.id }}</td>
+              <td class="py-2 px-2">{{ r.file_name||'—' }}</td>
+              <td class="py-2 px-2 text-rose-600">{{ (r.issues||[]).join(', ') }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
 </section>
