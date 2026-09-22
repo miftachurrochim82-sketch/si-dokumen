@@ -4,7 +4,7 @@
   <base target="_top">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>SIDOKUMEN v1.5 full • 35 output — Satpol PP & Damkar Trenggalek</title>
+  <title>SIDOKUMEN v1.0.2 — Satpol PP & Damkar Trenggalek</title>
   <meta name="theme-color" content="#065f46">
   <link rel="preconnect" href="https://cdn.jsdelivr.net">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -14,10 +14,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.2/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/vue@3.5.42/dist/vue.global.prod.js"></script>
-  <!-- CDN @v2.8.1 — starter-kit v2.10.1 -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/miftachurrochim82-sketch/frontend-cdn@v2.8.1/frontend/app-common.min.css">
   <style>
-    :root { --primary:#065f46; --primary-dark:#064e3b; --primary-light:#ecfdf5; --primary-lighter:#d1fae5; --primary-text:#064e3b; --primary-accent:#34d399; --primary-rgb:6,95,70; }
+    :root {
+      --primary:#065f46; --primary-dark:#064e3b; --primary-light:#ecfdf5;
+      --primary-lighter:#d1fae5; --primary-text:#064e3b; --primary-accent:#34d399; --primary-rgb:6,95,70;
+    }
+    [v-cloak] { display: none !important; }
     .filter-bar-analytics { display:flex; flex-direction:column; gap:0.5rem; align-items:flex-end; }
     @media(min-width:640px){ .filter-bar-analytics{ flex-direction:row; } }
     .filter-label { font-size:11px; color:#64748b; font-weight:500; display:block; margin-bottom:2px; }
@@ -29,7 +32,7 @@
   </style>
   <script>try { if (localStorage.getItem('sidokumen_dark') === 'true') document.documentElement.classList.add('dark'); } catch (e) {}</script>
   <script>
-    window.__SSO_TICKET__ = <?!= JSON.stringify(String(ticket || '')) ?>;
+    window.__SSO_TICKET__ = <?!= jsonSafe_(String(ticket || '')) ?>;
     window.__IS_SSO_ENTRY__ = <?= isSsoEntry === 'true' ? 'true' : 'false' ?>;
   </script>
 </head>
@@ -40,7 +43,7 @@
         <span class="flex-1 leading-snug">{{ toast.message }}</span>
       </div>
     </div>
-    <app-login v-if="!token" :is-processing="isProcessing" :error-message="errorMessage" :app-title="appTitle" app-subtitle="SIDOKUMEN v1.5 full — 35 output L12+A10+E8+R5 — Gudang Dokumen Kinerja (PK, SKP, Lapkin)" instansi="Satpol PP & Damkar Trenggalek" @login="goToPlatform"></app-login>
+    <app-login v-if="!token" :is-processing="isProcessing" :error-message="errorMessage" :app-title="appTitle" app-subtitle="SIDOKUMEN v1.0.2 — Gudang Dokumen Kinerja (PK, SKP, Lapkin)" instansi="Satpol PP & Damkar Trenggalek" @login="goToPlatform"></app-login>
     <div v-else class="flex h-screen overflow-hidden bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans">
       <app-sidebar :collapsed="sidebarCollapsed" :mobile-open="sidebarMobileOpen" :dark="isDarkMode" :current-page="currentPage" :is-admin="isAdmin" :user="currentUser" :brand="brand" :menu="menu" @navigate="navigateTo" @toggle="toggleSidebar" @close="sidebarMobileOpen = false" @logout="logout"></app-sidebar>
       <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
@@ -55,7 +58,6 @@
           <?!= include('V_Analisa'); ?>
           <?!= include('V_Evaluasi'); ?>
           <?!= include('V_Rtl'); ?>
-          <?!= include('V_Rekap'); ?>
           <?!= include('V_Master'); ?>
         </main>
       </div>
