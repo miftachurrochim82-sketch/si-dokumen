@@ -105,6 +105,7 @@ var ALL_SHEET_HEADERS = {
   T_DOKUMEN: [
     'id', 'pegawai_id', 'jenis_dokumen_id', 'tahun', 'bulan', 'periode_label', 'judul', 'deskripsi',
     'file_drive_id', 'file_name', 'file_size', 'file_mime', 'status', 'uploaded_by', 'catatan',
+    'lokasi_fisik', 'kondisi_fisik',
     'created_at', 'updated_at', 'created_by', 'updated_by', 'deleted_at'
   ],
   T_VERIFIKASI: [
@@ -304,7 +305,7 @@ function getAppConfig_() {
       'evaluasi_sla_disposisi': 'viewer', 'evaluasi_jra': 'viewer', 'evaluasi_sla': 'viewer',
       'get_tindak_lanjut_list': 'viewer', 'rtl_get_list': 'viewer', 'get_tindak_lanjut_detail': 'viewer', 'rtl_get_detail': 'viewer',
       'save_tindak_lanjut': 'user', 'rtl_save': 'user', 'delete_tindak_lanjut': 'admin', 'rtl_delete': 'admin',
-      'ubah_status_tindak_lanjut': 'user', 'rtl_ubah_status': 'user', 'generate_tindak_lanjut': 'user', 'rtl_generate': 'user',
+      'ubah_status_tindak_lanjut': 'user', 'rtl_ubah_status': 'user', 'generate_tindak_lanjut': 'verifikator', 'rtl_generate': 'verifikator',
       'save': 'admin', 'delete': 'admin', 'ping': 'viewer', 'exchange_platform_ticket': 'viewer', 'logout': 'viewer', 'init_database': 'super'
     },
     entityPermissions: {}, localHandlers: {}
