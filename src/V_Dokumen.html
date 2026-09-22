@@ -1,4 +1,4 @@
-<!-- SIDOKUMEN - V_Dokumen.html (v1.0 — UIUX v1.10) -->
+<!-- SIDOKUMEN - V_Dokumen.html (v1.0.2 — pagination server-side tunggal) -->
 <section v-if="currentPage === 'dokumen'" class="space-y-4 animate-fade-in">
   <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-3">
     <div>
@@ -6,23 +6,37 @@
         <i class="fa-solid fa-file-lines text-emerald-600 dark:text-emerald-400"></i> Dokumen Kinerja
       </h2>
       <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-        Upload PDF PK, SKP Tahunan, SKP Periodik/Perubahan, PK Perubahan, Penilaian Bulanan/Tahunan, Lapkin — campur pegawai & admin
+        Upload PDF PK, SKP Tahunan, SKP Periodik/Perubahan, PK Perubahan, Penilaian Bulanan/Tahunan, Lapkin
       </p>
     </div>
-    <button class="btn btn-primary" @click="showDokumenForm=true; dokumenForm={ id:'', pegawai_id:'', jenis_dokumen_id:'', tahun: String(new Date().getFullYear()), bulan:'', periode_label:'', judul:'', deskripsi:'', file_drive_id:'', file_name:'', file_size:0, file_mime:'', status:'baru', uploaded_by:'', catatan:'' }"><i class="fa-solid fa-plus"></i> Upload Baru</button>
+    <button class="btn btn-primary" @click="openDokumenCreate()"><i class="fa-solid fa-plus"></i> Upload Baru</button>
   </div>
 
   <div class="filter-bar-analytics">
     <div class="flex-1 w-full"><label class="filter-label">Cari</label><input type="text" class="input w-full" placeholder="Cari judul, file, catatan..." v-model="dokumenFilters.search" @input="loadDokumen(1)"></div>
     <div class="w-28"><label class="filter-label">Tahun</label><input type="text" class="input w-full" placeholder="2026" v-model="dokumenFilters.tahun" @change="loadDokumen(1)"></div>
-    <div class="w-40"><label class="filter-label">Jenis</label><select class="input w-full" v-model="dokumenFilters.jenis_dokumen_id" @change="loadDokumen(1)"><option value="">Semua Jenis</option><option v-for="j in jenisList" :key="j.id" :value="j.id">{{ j.nama }}</option></select></div>
-    <div class="w-36"><label class="filter-label">Status</label><select class="input w-full" v-model="dokumenFilters.status" @change="loadDokumen(1)"><option value="">Semua Status</option><option value="baru">Baru</option><option value="menunggu">Menunggu</option><option value="disetujui">Disetujui</option><option value="revisi">Revisi</option><option value="ditolak">Ditolak</option></select></div>
+    <div class="w-40"><label class="filter-label">Jenis</label>
+      <select class="input w-full" v-model="dokumenFilters.jenis_dokumen_id" @change="loadDokumen(1)">
+        <option value="">Semua Jenis</option>
+        <option v-for="j in jenisList" :key="j.id" :value="j.id">{{ j.nama }}</option>
+      </select>
+    </div>
+    <div class="w-36"><label class="filter-label">Status</label>
+      <select class="input w-full" v-model="dokumenFilters.status" @change="loadDokumen(1)">
+        <option value="">Semua Status</option>
+        <option value="baru">Baru</option>
+        <option value="menunggu">Menunggu</option>
+        <option value="disetujui">Disetujui</option>
+        <option value="revisi">Revisi</option>
+        <option value="ditolak">Ditolak</option>
+      </select>
+    </div>
     <button class="btn btn-ghost" @click="loadDokumen(1)"><i class="fa-solid fa-rotate"></i></button>
   </div>
 
   <div class="card overflow-hidden !p-0">
     <app-skeleton v-if="dokumenLoading && !dokumenList.length" type="table"></app-skeleton>
-    <app-empty-state v-else-if="!filteredDokumen.length" icon="fa-solid fa-folder-open" title="Belum ada dokumen" subtitle="Upload pertama lewat tombol Upload Baru."></app-empty-state>
+    <app-empty-state v-else-if="!paginatedDokumen.length" icon="fa-solid fa-folder-open" title="Belum ada dokumen" subtitle="Upload pertama lewat tombol Upload Baru."></app-empty-state>
     <div v-else class="table-scroll">
       <table class="w-full text-xs">
         <thead class="border-b bg-slate-50 dark:bg-slate-800/50">
@@ -52,9 +66,13 @@
         </tbody>
       </table>
     </div>
-    <div v-if="dokumenTotalPages>1" class="flex items-center justify-between p-3 border-t text-xs">
-      <span class="text-slate-500">{{ filteredDokumen.length }} data • hal {{ dokumenPagination.page }}/{{ dokumenTotalPages }}</span>
-      <div class="flex gap-1"><button class="btn-icon" :disabled="dokumenPagination.page<=1" @click="dokumenPagination.page--; loadDokumen(dokumenPagination.page)"><i class="fa-solid fa-chevron-left"></i></button><button class="btn-icon" :disabled="dokumenPagination.page>=dokumenTotalPages" @click="dokumenPagination.page++; loadDokumen(dokumenPagination.page)"><i class="fa-solid fa-chevron-right"></i></button></div>
+
+    <div v-if="dokumenTotalPagesServer>1" class="flex items-center justify-between p-3 border-t text-xs">
+      <span class="text-slate-500">{{ dokumenTotalData }} data • hal {{ dokumenPage }}/{{ dokumenTotalPagesServer }}</span>
+      <div class="flex gap-1">
+        <button class="btn-icon" :disabled="dokumenPage<=1" @click="loadDokumen(dokumenPage-1)"><i class="fa-solid fa-chevron-left"></i></button>
+        <button class="btn-icon" :disabled="dokumenPage>=dokumenTotalPagesServer" @click="loadDokumen(dokumenPage+1)"><i class="fa-solid fa-chevron-right"></i></button>
+      </div>
     </div>
   </div>
 </section>
