@@ -4,8 +4,8 @@ Gudang file Perjanjian Kinerja, Sasaran SKP Tahunan, Sasaran SKP Periodik/Peruba
 
 > Versi: v1.7.1 — 35 output + 12 sheet + 93 handler + 35 domain test — Index v1.0.4 (Tailwind compiled, tanpa Play CDN) + J_State v1.0.4 + J_Helpers v1.0.3 + J_Api v1.0.3 + J_Actions v1.0.4 + J_App v1.0.3 + V_ 7 files v1.0.3 (+V_Master v1.0.2) + backend 01-02 v1.0.4 + 13 v1.0.4 + 17 v1.0.8 + 99 v1.0.5 — 2026-09-22
 > ⚠️ Test belum dijalankan ulang di GAS setelah fix keamanan v1.7.1 — wajib jalankan `runAllTestsSidokumen()` (target 35/0) SEBELUM deploy.
-> Template: starter-kit v2.10.1 (12 sheet + 93 handler + RTL FSM + UIUX v1.10)
-> CoreLib pin 15 (v2.3.0) • CDN @v2.8.1 • Vue 3.5.42 • FA 6.5.2 • Tema #065f46 emerald-800
+> Template: starter-kit v2.12.0 (12 sheet + 93 handler + RTL FSM + UIUX v1.10 + 1 CSS+9 JS)
+> CoreLib pin 17 (v2.4.0) • CDN @v2.9.1 (1 CSS+9 JS) • Vue 3.5.42 • FA 6.5.2 • Tema #065f46 emerald-800
 > Test: 🎯 Domain 35 test (27 base + 8 keamanan K2/K3) — target HIJAU setelah run ulang di GAS
 > Sync: workspace = GitHub (after upload) — 26 src + 9 docs + README v1.7.1 — GAS butuh paste 01/02/17/99
 
@@ -171,7 +171,7 @@ File kinerja tercecer di WA/email/laptop, tidak tahu siapa belum upload, cari fi
 
 ### Backend (10)
 
-- `appsscript.json` v1.0.2 — CoreLib pin 15 v2.3.0 + scope Drive + `developmentMode: false`
+- `appsscript.json` v1.0.3 — CoreLib pin 17 v2.4.0 + scope Drive + `developmentMode: false`
 - `00_Utils.gs` **v1.0.3** — audit_, sendAuditLog_, **jsonSafe_** (escape XSS) + dry-run guard + self-check
 - `01_ConfigAndBridge.gs` **v1.0.3** — **12 sheet** + **93 actionLevels** + isRefSheet_ SIMPEG-only + KONFIGURASI/cfg + T_DOKUMEN.lokasi_fisik + generate_tindak_lanjut→verifikator
 - `02_AppLogic.gs` **v1.0.3** — 91 localHandlers + ensureLocalSheets_ + seed 10+5+3 + getDashboard_ RTL stats + filter unit_id + actor fallback (pegawai_id > id > email)

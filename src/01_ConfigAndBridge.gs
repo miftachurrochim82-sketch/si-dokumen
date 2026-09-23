@@ -1,7 +1,7 @@
 // ============================================================
 // SIDOKUMEN - 01_ConfigAndBridge.gs (v1.0.4 — 12 sheet + 93 handler + Drive + UIUX v1.10)
 // ============================================================
-// Bridge ke CoreLib v2.3.0 pin 15 + kontrak dispatcher v2.
+// Bridge ke CoreLib v2.3.0 pin 17 + kontrak dispatcher v2.
 // 12 sheet = 11 domain + 1 KONFIGURASI (key-value store).
 //
 // Changelog:

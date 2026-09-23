@@ -9,9 +9,9 @@
 - tailwind.config extend colors primary 50-900 emerald
 - Brand: title 'SIDOKUMEN', subtitle 'Gudang Dokumen Kinerja — Laporan 12 + Analisa 10 + Evaluasi 8 + RTL 5', logoIcon fa-folder-tree, logoChar SD — J_App v1.0.2
 - Dark mode: try localStorage sidokumen_dark → documentElement classList dark — toggle via app-header
-- Font: Inter 400-900, FA 6.5.2, Vue 3.5.42, CDN @v2.8.1 app-common, app-components, app-core, app-modules
+- Font: Inter 400-900, FA 6.5.2, Vue 3.5.42, CDN @v2.9.1 (1 CSS+9 JS) app-common, app-components, app-core, app-modules
 
-## Layout Shell v1.6.3 — starter-kit v2.10.0 + CDN @v2.8.1 — Index v1.0.2 GAS truth
+## Layout Shell v1.6.3 — starter-kit v2.10.0 + CDN @v2.9.1 (1 CSS+9 JS) — Index v1.0.2 GAS truth
 - Index.html: base target _top, meta viewport, theme-color, preconnect cdnjs + fonts, tailwind CDN, Inter, FA, Vue prod, app-common.min.css, style :root + [v-cloak] + filter-bar-analytics + filter-label + table-scroll + progress-track/fill, __SSO_TICKET__ + __IS_SSO_ENTRY__, app div v-cloak + toast-container + app-login + app-sidebar + app-header + main overflow-y-auto p-4 sm:p-6 lg:p-8 + include V_Modals, V_Dashboard, V_Dokumen, V_Laporan, V_Analisa, V_Evaluasi, V_Rtl, V_Master + include J_State, J_Helpers, J_Api, J_Actions, J_App + CDN app-components/core/modules
 - Include order: V_Modals → V_Dashboard → V_Dokumen → V_Laporan → V_Analisa → V_Evaluasi → V_Rtl → V_Master (V_Rekap legacy tidak di-include, dead code 4.8KB, bisa hapus)
 - J_State → J_Helpers → J_Api → J_Actions → J_App (AppCore.create) — mixins SidokumenMixin data+computed+methods
@@ -90,4 +90,4 @@
 - V_ 9 files v1.0.2 sinkron backend shape — proyeksi, units[], pct_, clampPct_, rtl counters
 - J_State v1.0.3 pagination fix — dokumenTotalPagesServer
 - Index v1.0.2 GAS truth — 7 V_ include + 5 J_ include
-- Tema tetap #065f46 emerald, CDN @v2.8.1, Vue 3.5.42, FA 6.5.2
+- Tema tetap #065f46 emerald, CDN @v2.9.1 (1 CSS+9 JS), Vue 3.5.42, FA 6.5.2
