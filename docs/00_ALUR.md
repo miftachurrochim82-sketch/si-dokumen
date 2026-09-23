@@ -103,7 +103,7 @@
 - `00-08` update ke v1.7.0 dengan detail 30 bugfix + frontend v1.1.0 + 27 domain test + field baru
 
 ### 🧪 Test
-- **Library:** 42/0/1 (CoreLib v2.3.0, `KNOWN_LIB_FAILURES_` aware)
+- **Library:** 42/0/1 (CoreLib v2.4.0, `KNOWN_LIB_FAILURES_` aware)
 - **Routing:** 29/0 (91 localHandlers + 93 actionLevels, threshold ≥90)
 - **Domain:** **27/0** (naik dari 14 → tambah A5, A6 detail, A10, E1, E2, E7 + RTL FSM 2 assert + SCHEMA dinamis)
   - Base CRUD: JENIS.1, DOK.1-3, SCHEMA.1

@@ -1,6 +1,6 @@
 # 03_FRD — Functional Requirements Document — SIDOKUMEN v1.7.0 full sync
 
-> Satu baris FR = satu handler backend + satu UI. 12 sheet + 93 handler + Drive + frontend GAS truth v1.1.0 + backend 00-17 v1.0.3-v1.0.7 — starter-kit v2.10.0 + CoreLib v2.3.0
+> Satu baris FR = satu handler backend + satu UI. 12 sheet + 93 handler + Drive + frontend GAS truth v1.1.0 + backend 00-17 v1.0.3-v1.0.7 — starter-kit v2.10.0 + CoreLib v2.4.0
 
 ## FR-01 — M_JENIS_DOKUMEN CRUD — V_Master v1.1.0
 - **Sheet:** M_JENIS_DOKUMEN

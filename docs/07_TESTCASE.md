@@ -2,7 +2,7 @@
 
 > Target suite: runAllTestsSidokumen() — library 42/0/1 + routing 29/0 + domain 14/0 = GREEN — frontend GAS truth v1.0.2/v1.0.3 + V_ 9 files v1.0.2 + backend 14-17 v1.6-v1.9 — 11 sheet + 87 handler + Drive + UIUX v1.10
 
-## TC-LIB — Library CoreLib v2.3.0
+## TC-LIB — Library CoreLib v2.4.0
 - Jalankan `runLibraryTests()` — harap PASS 42 FAIL 0 SKIP 1 — dari CoreLib.runCoreTests(testCtx_) — ctx appCode, ssId, masterSsId, platformApiUrl, headersMap, isRefFunc
 
 ## TC-ROUTING — 87 handler routing — testDispatcherRouting()
@@ -125,7 +125,7 @@
 - Ubah Status → openRtlStatus → status baru + progress + catatan → ubah_status_tindak_lanjut → cek legal baru→diproses→selesai/batal → toast + loadRtl
 
 ## Rekap Test v1.6.3
-- Library PASS 42 FAIL 0 SKIP 1 — CoreLib v2.3.0
+- Library PASS 42 FAIL 0 SKIP 1 — CoreLib v2.4.0
 - Routing 29/0 — localHandlers 91 — ping fail-closed — semua handler L/A/E/R ada — 87 actionLevels
 - Domain PASS 14 FAIL 0 — JENIS.1, DOK.1, DOK.2, DOK.3, L4, L6, L11, L12, A3, A9, E3, E4, R generate, SCHEMA 11
 - Frontend manual 7 checklist — Index, Dokumen pagination, Upload role-guard nextTick, Laporan L6/L12, Analisa A6/A7, Evaluasi E3/E4, RTL generate — semua OK

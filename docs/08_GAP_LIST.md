@@ -52,5 +52,5 @@
 - G35 — Integrasi e-Kinerja BKN — IDE — mapping pegawai_id + SKP
 - G36 — Retensi otomatis + BA musnah digital — IDE — E6 + R4 sudah ada logic, tinggal BA digital + TTE
 - G37 — Dashboard eksekutif + export PDF — IDE
-- G38 — CDN candidates promotion — IDE — C4-C8 queued (C1-C3 sudah di CoreLib v2.3.0)
+- G38 — CDN candidates promotion — IDE — C4-C8 queued (C1-C3 sudah di CoreLib v2.4.0)
 - G39 — Debounce search + app-confirm modal ganti confirm() — FIX minor v1.7 — sudah dicatat di audit 2026-09-22

@@ -1,6 +1,6 @@
 # 06_API_FLOW — SIDOKUMEN v1.6.3 full sync
 
-> 87 handler = 6 config +2 self +1 dashboard +3 SIMPEG +1 master_satelit +3 jenis +5 dokumen +8 laporan L1-L3,L7-L10 +6 laporan rekap L4-L6,L11,L12 +8 analisa A3-A10 +11 evaluasi E1-E8 +12 RTL R1-R5 +2 native — frontend GAS truth v1.0.2/v1.0.3 + V_ 9 files v1.0.2 + backend 14-17 v1.6-v1.9 — CoreLib v2.3.0 pin15
+> 87 handler = 6 config +2 self +1 dashboard +3 SIMPEG +1 master_satelit +3 jenis +5 dokumen +8 laporan L1-L3,L7-L10 +6 laporan rekap L4-L6,L11,L12 +8 analisa A3-A10 +11 evaluasi E1-E8 +12 RTL R1-R5 +2 native — frontend GAS truth v1.0.2/v1.0.3 + V_ 9 files v1.0.2 + backend 14-17 v1.6-v1.9 — CoreLib v2.4.0 pin 17
 
 ## Flow SSO (standar ekosistem si-platform)
 1. User buka katalog si-platform → klik SIDOKUMEN → ?ticket=st_xxx
