@@ -1,8 +1,11 @@
-// SIDOKUMEN - 13_LaporanRekapApi.gs (v1.0.3 — L4/L5/L6/L11/L12)
+// SIDOKUMEN - 13_LaporanRekapApi.gs (v1.0.4 — L4/L5/L6/L11/L12)
 // ============================================================
 // L4 per Jenis, L5 per Unit, L6 per Pegawai, L11 Kepatuhan Upload, L12 Laporan Khas 7 sheet
 //
 // Changelog:
+//   v1.0.4 — lapRekapUnit_ (L5) menambah field unit_nama (nama unit asli dari
+//            UNIT_KERJA, fallback ke unit_id) — frontend tak lagi menampilkan
+//            kode unit mentah.
 //   v1.0.3 — Fix lapKepatuhanUpload_: pakai buildDeadlineMap_ (dual-map byDokumen+byJenis)
 //            dari 10_LaporanApi.gs. Hapus fallback blanket Jan-31. Tambah field
 //            total_with_deadline & no_deadline per row.
@@ -40,12 +43,16 @@ function lapRekapUnit_(params) {
   var pegawaiMap = {};
   getSheetData_('PEGAWAI').forEach(function (p) { pegawaiMap[String(p.pegawai_id).trim()] = String(p.unit_id || 'tanpa').trim(); });
 
+  // v1.0.4 — unit_nama (nama unit asli dari UNIT_KERJA, fallback ke id)
+  var unitNamaMap = {};
+  getSheetData_('UNIT_KERJA').forEach(function (u) { unitNamaMap[String(u.unit_id || '').trim()] = u.nama_unit || String(u.unit_id); });
+
   var map = {};
   list.forEach(function (r) {
     var unit = pegawaiMap[String(r.pegawai_id).trim()] || 'tanpa';
     map[unit] = (map[unit] || 0) + 1;
   });
-  var rekap = Object.keys(map).map(function (k) { return { unit_id: k, jml: map[k] }; });
+  var rekap = Object.keys(map).map(function (k) { return { unit_id: k, unit_nama: unitNamaMap[k] || k, jml: map[k] }; });
   rekap.sort(function (a, b) { return b.jml - a.jml; });
 
   return { success: true, data: { tahun: tahun, total: list.length, rekap: rekap } };

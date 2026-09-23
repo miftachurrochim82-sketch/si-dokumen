@@ -1,5 +1,5 @@
 <script>
-// SIDOKUMEN - J_Helpers.html (v1.0.2 — helper format & lookup)
+// SIDOKUMEN - J_Helpers.html (v1.0.3 — formatBytes_)
 window.SidokumenHelpers = {
   methods: {
     fmtTgl(val) {
@@ -93,6 +93,12 @@ window.SidokumenHelpers = {
     pct_(num, den) {
       if (!den) return 0;
       return Math.round((Number(num || 0) / Number(den)) * 100);
+    },
+    formatBytes_(n) {
+      var v = Number(n) || 0;
+      if (v < 1024) return v + ' B';
+      if (v < 1024 * 1024) return (v / 1024).toFixed(1) + ' KB';
+      return (v / (1024 * 1024)).toFixed(2) + ' MB';
     },
     clampPct_(v) {
       var n = Number(v) || 0;

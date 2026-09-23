@@ -1,5 +1,5 @@
 <script>
-// SIDOKUMEN - J_App.html (v1.0.2 — mount app + routing)
+// SIDOKUMEN - J_App.html (v1.0.3 — icon menu laporan beda dari dokumen)
 var SidokumenMixin = {
   data: function () { return Object.assign({}, window.SidokumenState.data()); },
   computed: Object.assign({}, window.SidokumenState.computed),
@@ -27,7 +27,7 @@ var app = AppCore.create({
     { name: 'Utama', items: [
       { id: 'dashboard', label: 'Dashboard', icon: 'fa-solid fa-gauge-high' },
       { id: 'dokumen',   label: 'Dokumen',   icon: 'fa-solid fa-file-lines' },
-      { id: 'laporan',   label: 'Laporan',   icon: 'fa-solid fa-file-lines' }
+      { id: 'laporan',   label: 'Laporan',   icon: 'fa-solid fa-table-list' }
     ]},
     { name: 'Analisa', items: [
       { id: 'analisa',  label: 'Analisa',  icon: 'fa-solid fa-chart-line' },
@@ -41,7 +41,7 @@ var app = AppCore.create({
   pageIcons: {
     dashboard: 'fa-solid fa-gauge-high',
     dokumen:   'fa-solid fa-file-lines',
-    laporan:   'fa-solid fa-file-lines',
+    laporan:   'fa-solid fa-table-list',
     analisa:   'fa-solid fa-chart-line',
     evaluasi:  'fa-solid fa-clipboard-check',
     rtl:       'fa-solid fa-list-check',

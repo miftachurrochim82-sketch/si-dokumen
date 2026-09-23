@@ -1,5 +1,5 @@
 // ============================================================
-// SIDOKUMEN - 02_AppLogic.gs (v1.0.3 — dispatcher + generic helpers + init DB)
+// SIDOKUMEN - 02_AppLogic.gs (v1.0.4 — dispatcher + generic helpers + init DB)
 // ============================================================
 // Implementasi domain dipisah per file (hindari duplikat lintas file):
 //   10_LaporanApi.gs        — L1, L2, L7, L8, L9, L10
@@ -18,6 +18,10 @@
 //   - initDatabase / ensureLocalSheets_
 //
 // Changelog:
+//   v1.0.4 — K2+K3 (keamanan): assertOwnerOrAdmin_ (anti-IDOR); saveDokumen_
+//            kunci status non-verifikator + pegawai_id hanya diri sendiri;
+//            deleteDokumen_ cek owner; verifikasiDokumen_ anti self-approve +
+//            DOKUMEN_TRANSISI_LEGAL_ (state machine).
 //   v1.0.3 — Header version sync; verifikasiDokumen_ fallback actor ID;
 //            handleAction err.stack guard; ping version bump; getDashboard_ + RTL stats.
 //   v1.0.2 — Cleanup duplikat fungsi (lap*, analisa*, evaluasi*, *TindakLanjut*)
@@ -66,7 +70,7 @@ function handleAction(payload) {
 
 function buildLocalHandlers_() {
   var h = {};
-  h['ping'] = function () { return { success: true, data: { pong: true, app: APP_CODE, time: new Date().toISOString(), version: 'v1.0.3' } }; };
+  h['ping'] = function () { return { success: true, data: { pong: true, app: APP_CODE, time: new Date().toISOString(), version: 'v1.0.4' } }; };
   h['get_my_profile'] = function (d, u) { return { success: true, data: u }; };
   h['save_my_profile'] = function (d, u) { return CoreLib.saveMyProfile(SPREADSHEET_ID, d, u, ALL_SHEET_HEADERS, MASTER_SPREADSHEET_ID); };
   h['get_dashboard'] = function (d, u) { return getDashboard_(u); };
@@ -99,7 +103,7 @@ function buildLocalHandlers_() {
   h['get_dokumen_list'] = function (d) { return getDokumenList_(d || {}); };
   h['get_dokumen_detail'] = function (d) { return getGenericDetail_('T_DOKUMEN', d || {}); };
   h['save_dokumen'] = function (d, u) { return saveDokumen_(d || {}, u); };
-  h['delete_dokumen'] = function (d, u) { return deleteGeneric_('T_DOKUMEN', d || {}, u); };
+  h['delete_dokumen'] = function (d, u) { return deleteDokumen_(d || {}, u); };
   h['verifikasi_dokumen'] = function (d, u) { return verifikasiDokumen_(d || {}, u); };
 
   // T_VERIFIKASI
@@ -228,6 +232,21 @@ function deleteGeneric_(sheet, params, actor) {
   catch (e) { return { success: false, code: 'BAD_REQUEST', error: e.message }; }
 }
 
+// K3 (v1.0.4): guard kepemilikan — owner record ATAU admin/super.
+// Semantik identik CoreLib RLS (handleDeclarativeResourceAction_):
+//   - admin/super  → lolos (bypass);
+//   - role lain    → nilai ownerField di baris target harus sama dengan
+//                    pegawai_id aktor (normalisasi trim+lowercase via CoreLib.normStr);
+//   - baris tanpa owner (data legacy / belum ditugaskan) → HANYA admin (fail-closed).
+function assertOwnerOrAdmin_(actor, row, ownerField) {
+  var role = String((actor && actor.role) || 'viewer').toLowerCase();
+  if (role === 'admin' || role === 'super') return true;
+  var actorId = CoreLib.normStr((actor && (actor.pegawai_id || actor.id)) || '');
+  var ownerId = CoreLib.normStr((row && row[ownerField]) || '');
+  if (!ownerId) return false; // fail-closed: tanpa owner → hanya admin
+  return actorId !== '' && actorId === ownerId;
+}
+
 // ==================== §4 DOMAIN DOKUMEN ====================
 function getDokumenList_(params) {
   var list = getSheetData_('T_DOKUMEN');
@@ -257,6 +276,28 @@ function saveDokumen_(params, actor) {
   if (!rec.pegawai_id) return { success: false, code: 'BAD_REQUEST', error: 'Pegawai wajib.' };
   if (!rec.jenis_dokumen_id) return { success: false, code: 'BAD_REQUEST', error: 'Jenis dokumen wajib.' };
   if (!rec.tahun) return { success: false, code: 'BAD_REQUEST', error: 'Tahun wajib.' };
+
+  // v1.0.4 (K3): guard kepemilikan — non-admin hanya bisa bertindak atas namanya sendiri
+  var actorRole = String((actor && actor.role) || 'viewer').toLowerCase();
+  var isAdminActor = (actorRole === 'admin' || actorRole === 'super');
+  if (!rec.id && !isAdminActor) {
+    // Buat baru: kunci pegawai_id ke diri sendiri (tolak upload atas nama orang lain via API)
+    var myId = CoreLib.normStr((actor && (actor.pegawai_id || actor.id)) || '');
+    if (!myId || CoreLib.normStr(rec.pegawai_id) !== myId) {
+      return { success: false, code: 'FORBIDDEN', error: 'Anda hanya bisa membuat dokumen atas nama sendiri.' };
+    }
+  }
+  // v1.0.4 (K2+K3): update — non-verifikator: cek owner + status terkunci
+  if (rec.id && ['verifikator', 'admin', 'super'].indexOf(actorRole) === -1) {
+    var oldDoc = findRecordById_('T_DOKUMEN', rec.id);
+    if (!oldDoc) return { success: false, code: 'NOT_FOUND', error: 'Dokumen tidak ditemukan.' };
+    if (!assertOwnerOrAdmin_(actor, oldDoc, 'pegawai_id')) {
+      return { success: false, code: 'FORBIDDEN', error: 'Anda hanya bisa mengubah dokumen milik sendiri.' };
+    }
+    // K2: non-verifikator tidak bisa mengubah status — perubahan hanya via
+    // verifikasi_dokumen (FSM + anti self-approve)
+    rec.status = oldDoc.status || 'baru';
+  }
 
   if (!rec.judul) {
     var jenis = findRecordById_('M_JENIS_DOKUMEN', rec.jenis_dokumen_id);
@@ -311,23 +352,66 @@ function getOrCreateFolder_(name, parent) {
   return parent ? parent.createFolder(name) : DriveApp.createFolder(name);
 }
 
+// K3 (v1.0.4): hapus dokumen — hanya owner (pegawai_id) atau admin/super.
+function deleteDokumen_(params, actor) {
+  var id = params.id;
+  if (!id) return { success: false, code: 'BAD_REQUEST', error: 'ID wajib.' };
+  var row = findRecordById_('T_DOKUMEN', id);
+  if (!row) return { success: false, code: 'NOT_FOUND', error: 'Dokumen tidak ditemukan.' };
+  if (!assertOwnerOrAdmin_(actor, row, 'pegawai_id')) {
+    return { success: false, code: 'FORBIDDEN', error: 'Anda hanya bisa menghapus dokumen milik sendiri.' };
+  }
+  try { softDeleteRecord_('T_DOKUMEN', id, actor); return { success: true, data: { id: id } }; }
+  catch (e) { return { success: false, code: 'BAD_REQUEST', error: e.message }; }
+}
+
+// v1.0.4 (K2): state machine status dokumen
+//   baru/menunggu → disetujui | revisi | ditolak   (keputusan verifikator)
+//   revisi        → baru | disetujui | ditolak     (pegawai unggah ulang → baru)
+//   ditolak       → baru                            (pegawai unggah ulang → baru)
+//   disetujui     → (final — tidak bisa berubah)
+var DOKUMEN_TRANSISI_LEGAL_ = {
+  'baru':      ['disetujui', 'revisi', 'ditolak'],
+  'menunggu':  ['disetujui', 'revisi', 'ditolak'],
+  'revisi':    ['baru', 'disetujui', 'ditolak'],
+  'ditolak':   ['baru'],
+  'disetujui': []
+};
+
 function verifikasiDokumen_(params, actor) {
   var id = params.id;
   var statusBaru = params.status_baru || params.status;
   var catatan = params.catatan || '';
   if (!id) return { success: false, code: 'BAD_REQUEST', error: 'ID wajib.' };
   if (!statusBaru) return { success: false, code: 'BAD_REQUEST', error: 'Status baru wajib.' };
+  var newStatus = String(statusBaru).toLowerCase().trim();
   var allowed = ['baru', 'menunggu', 'disetujui', 'revisi', 'ditolak'];
-  if (allowed.indexOf(String(statusBaru).toLowerCase()) === -1) return { success: false, code: 'BAD_REQUEST', error: 'Status tidak valid.' };
+  if (allowed.indexOf(newStatus) === -1) return { success: false, code: 'BAD_REQUEST', error: 'Status tidak valid.' };
   var old = findRecordById_('T_DOKUMEN', id);
   if (!old) return { success: false, code: 'NOT_FOUND', error: 'Dokumen tidak ditemukan.' };
+
+  // v1.0.4 (K2): larang self-approve — verifikator tidak boleh memverifikasi
+  // dokumen miliknya sendiri (integritas verifikasi)
+  var actorPegawaiId = CoreLib.normStr((actor && (actor.pegawai_id || actor.id)) || '');
+  if (actorPegawaiId && CoreLib.normStr(old.pegawai_id) === actorPegawaiId) {
+    return { success: false, code: 'FORBIDDEN', error: 'Verifikator tidak boleh memverifikasi dokumen miliknya sendiri.' };
+  }
+
+  // v1.0.4 (K2): state machine — hanya transisi legal yang lolos
+  var oldStatus = String(old.status || 'baru').toLowerCase().trim();
+  if (oldStatus !== newStatus) {
+    var legal = DOKUMEN_TRANSISI_LEGAL_[oldStatus] || [];
+    if (legal.indexOf(newStatus) === -1) {
+      return { success: false, code: 'BAD_REQUEST', error: 'Transisi tidak legal: ' + oldStatus + ' → ' + newStatus + '. Legal: ' + (legal.join(', ') || '(tidak ada)') };
+    }
+  }
 
   // Fallback aktor ID: pegawai_id > id > email (untuk audit trail)
   var actorId = (actor && (actor.pegawai_id || actor.id || actor.email)) || '';
 
   try {
-    var saved = saveRecord_('T_DOKUMEN', { id: id, status: statusBaru, catatan: catatan || old.catatan }, actor);
-    saveRecord_('T_VERIFIKASI', { dokumen_id: id, verifikator_id: actorId, status_lama: old.status, status_baru: statusBaru, catatan: catatan }, actor);
+    var saved = saveRecord_('T_DOKUMEN', { id: id, status: newStatus, catatan: catatan || old.catatan }, actor);
+    saveRecord_('T_VERIFIKASI', { dokumen_id: id, verifikator_id: actorId, status_lama: oldStatus, status_baru: newStatus, catatan: catatan }, actor);
     return { success: true, data: saved };
   } catch (e) { return { success: false, code: 'BAD_REQUEST', error: e.message }; }
 }

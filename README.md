@@ -1,13 +1,50 @@
-# 📁 SIDOKUMEN — Sistem Dokumen Kinerja (v1.7.0 full sync)
+# 📁 SIDOKUMEN — Sistem Dokumen Kinerja (v1.7.1)
 
 Gudang file Perjanjian Kinerja, Sasaran SKP Tahunan, Sasaran SKP Periodik/Perubahan, PK Perubahan, Penilaian SKP Bulanan/Tahunan, Laporan Kinerja, LHKPN, IKI, dll — untuk Satpol PP & Damkar Kab. Trenggalek.
 
-> Versi: v1.7.0 full sync — 35 output + 12 sheet + 93 handler + 27 domain test — Index v1.0.3 + J_State v1.0.4 + J_Helpers v1.0.3 + J_Api v1.0.3 + J_Actions v1.0.4 + J_App v1.0.3 + V_ 8 files v1.1.0 + backend 00-17 v1.0.3-v1.0.7 + 99 v1.0.4 — 2026-09-22
-> Workspace = GAS truth (16 frontend + 10 backend) — 26 src + 9 docs v1.7.0 + README — 100% sync GAS=Workspace=GitHub (after upload)
-> Template: starter-kit v2.10.1 (12 sheet + 93 handler + RTL + UIUX v1.10)
+> Versi: v1.7.1 — 35 output + 12 sheet + 93 handler + 35 domain test — Index v1.0.4 (Tailwind compiled, tanpa Play CDN) + J_State v1.0.4 + J_Helpers v1.0.3 + J_Api v1.0.3 + J_Actions v1.0.4 + J_App v1.0.3 + V_ 7 files v1.0.3 (+V_Master v1.0.2) + backend 01-02 v1.0.4 + 13 v1.0.4 + 17 v1.0.8 + 99 v1.0.5 — 2026-09-22
+> ⚠️ Test belum dijalankan ulang di GAS setelah fix keamanan v1.7.1 — wajib jalankan `runAllTestsSidokumen()` (target 35/0) SEBELUM deploy.
+> Template: starter-kit v2.10.1 (12 sheet + 93 handler + RTL FSM + UIUX v1.10)
 > CoreLib pin 15 (v2.3.0) • CDN @v2.8.1 • Vue 3.5.42 • FA 6.5.2 • Tema #065f46 emerald-800
-> Test: 🎉 HIJAU — Library 42/0/1 + Routing 29/0 + Domain 27/0 (runAllTestsSidokumen)
-> Sync: workspace = GAS = GitHub — 26 src + 9 docs + README v1.7.0 — frontend GAS truth
+> Test: 🎯 Domain 35 test (27 base + 8 keamanan K2/K3) — target HIJAU setelah run ulang di GAS
+> Sync: workspace = GitHub (after upload) — 26 src + 9 docs + README v1.7.1 — GAS butuh paste 01/02/17/99
+
+## 🆕 Changelog v1.7.1 (dari v1.7.0) — Fix Keamanan (review ekosistem 4 repo)
+
+### 🔴 K2 — bypass verifikasi dokumen ditutup
+
+| # | File | Bug | Fix |
+|---|---|---|---|
+| 1 | `02_AppLogic.gs` | `save_dokumen` (level `user`) meneruskan `status` bebas → user bisa kirim `status:'disetujui'` dan lolos tanpa verifikator | Non-verifikator: create → status dipaksa `'baru'`; update → status dikunci ke nilai lama |
+| 2 | `01_ConfigAndBridge.gs` | Blok `localPreSaveHook_` untuk T_DOKUMEN = dead code (hanya efektif di T_APPROVAL) | Hook diperluas: non-verifikator tak bisa ubah status saat update (pertahanan ganda) |
+| 3 | `02_AppLogic.gs` | `verifikasi_dokumen` tanpa state machine + verifikator bisa approve dokumennya sendiri | `DOKUMEN_TRANSISI_LEGAL_` (disetujui = final; revisi/ditolak → baru via unggah ulang) + **anti self-approve** (FORBIDDEN) |
+
+### 🔴 K3 — IDOR (aksi ke dokumen orang lain) ditutup
+
+| # | File | Bug | Fix |
+|---|---|---|---|
+| 1 | `02_AppLogic.gs` | `delete_dokumen`/`save_dokumen` (level `user`) bekerja utk dokumen **siapa pun** — role-guard `pegawai_id` hanya ada di frontend | `assertOwnerOrAdmin_(actor, row, 'pegawai_id')` (semantik CoreLib RLS: admin/super bypass; owner = `pegawai_id`; baris tanpa owner = hanya admin, fail-closed) |
+| 2 | `02_AppLogic.gs` | Create baru bisa men-spoof `pegawai_id` orang lain via API | Non-admin hanya bisa membuat dokumen atas nama sendiri |
+| 3 | `17_RtlApi.gs` | `ubah_status_tindak_lanjut` (level `user`) bisa mengubah RTL **siapa pun** | Ownership guard di `assigned_to` (save update + ubah status) + create manual auto-fill `assigned_to` = pembuat |
+
+### 🧪 Test
+
+- `99_TestSuite.gs` v1.0.5 — **+8 test keamanan**: DOK.4 (FSM final), DOK.5 (bypass status), DOK.6 (self-approve), DOK.7 (IDOR create), DOK.8/9 (IDOR delete), R OWN (ownership RTL) → **35 domain test**.
+- Aktor test baru: `TEST_USER_B_` (PEG-002), `TEST_VERIFIKATOR_SELF_`.
+
+### 🎨 UI/UX Standar (audit 2026-09-22 — detail di `AUDIT_UIUX_SIDOKUMEN.md` workspace)
+
+| # | Perbaikan |
+|---|---|
+| 1 | **Play CDN dihapus** → CSS Tailwind v3.4.17 ter-compile (39,7 KB inline; Index 43,8 KB < batas 50 KB GAS) |
+| 2 | Fix bug E7: teks `:subtext` literal JavaScript tampil mentah di kartu |
+| 3 | ID mentah → nama: unit (A3, L5 + backend `unit_nama` baru), pegawai & jenis (E3, E6) |
+| 4 | Tombol Verifikasi kini `v-can="'verifikator'"` (user biasa tidak melihat tombol yang pasti gagal) |
+| 5 | Form RTL: field Status dihapus (status hanya via modal Ubah Status + state machine backend) |
+| 6 | Tab A8 TTE ("field belum ada") disembunyikan — fitur setengah jadi tidak dipamerkan |
+| 7 | Filter Tahun (13 tempat) = select `tahunOptions`, bukan teks bebas |
+| 8 | Chart Tren 12 bulan akurat dari server (L7 × 2 tahun), bukan 20 baris halaman pertama |
+| 9 | Ukuran file human-readable, icon menu unik, title tanpa versi internal |
 
 ## 🆕 Changelog v1.7.0 (dari v1.6.3)
 
@@ -179,15 +216,15 @@ File kinerja tercecer di WA/email/laptop, tidak tahu siapa belum upload, cari fi
 - `04_DATABASE.md` — **12 sheet schema** (header akurat — M_KATEGORI.deskripsi, T_LOGBOOK.aksi, T_APPROVAL.urutan, T_JADWAL.dokumen_id, T_REKAP.periode, KONFIGURASI.key)
 - `05_UIUX.md` — Design system + komponen + splash + hero + quick stats
 - `06_API_FLOW.md` — 93 handler mapping + flow
-- `07_TESTCASE.md` — **27 domain test** + frontend manual checklist
+- `07_TESTCASE.md` — **35 domain test** (27 base + 8 keamanan v1.7.1) + frontend manual checklist
 - `08_GAP_LIST.md` — v1.7 DONE (G01-G47) + v1.8 roadmap
 
 ## Sync Status 2026-09-22
 
-- GAS: 00 v1.0.3 + 01 v1.0.3 + 02 v1.0.3 + 10 v1.0.3 + 13 v1.0.3 + 14 v1.0.4 + 15 v1.0.5 + 16 v1.0.6 + 17 v1.0.7 + 99 v1.0.4 ✅ GREEN
-- Frontend: Index v1.0.3 + J_State v1.0.4 + J_Helpers v1.0.3 + J_Api v1.0.3 + J_Actions v1.0.4 + J_App v1.0.3 + V_ 8 files v1.1.0
-- Workspace: 26 src synced
-- GitHub: perlu upload batch v1.7.0 — `README.md`, `src/*` semua, `docs/*` semua — setelah itu 100% sync
+- Workspace (source of truth baru): 01 v1.0.4 + 02 v1.0.4 + 17 v1.0.8 + 99 v1.0.5 + sisanya tak berubah
+- GAS: BELUM sync — paste whole-file `01_ConfigAndBridge.gs`, `02_AppLogic.gs`, `17_RtlApi.gs`, `99_TestSuite.gs`, lalu jalankan `runAllTestsSidokumen()` → target Library 42/0/1 + Routing 29/0 + Domain **35/0**
+- Frontend: Index v1.0.3 + J_State v1.0.4 + J_Helpers v1.0.3 + J_Api v1.0.3 + J_Actions v1.0.4 + J_App v1.0.3 + V_ 8 files v1.1.0 (tidak berubah di v1.7.1)
+- GitHub: perlu upload batch v1.7.1 — `README.md`, `src/*` semua — setelah itu 100% sync
 
 ## Cara upload ke GitHub (drag-drop)
 

@@ -1,5 +1,5 @@
 <script>
-// SIDOKUMEN - J_State.html (v1.0.3 — state + computed lengkap)
+// SIDOKUMEN - J_State.html (v1.0.4 — tahunOptions select, trenBulanan chart akurat)
 // FIX v1.0.3:
 //   - dokumenTotalPages tidak duplikat data/computed (Vue3 conflict)
 //   - dokumenTotalPagesServer untuk server-side pagination
@@ -113,11 +113,28 @@ window.SidokumenState = {
       rtlStatusCatatan: '',
 
       // ========== UI ==========
-      rowMenuId: null
+      rowMenuId: null,
+      // Tren 12 bulan dari server (L7 dua tahun) — lebih akurat dari sample halaman
+      trenBulanan: { keys: [], counts: {} }
     };
   },
 
   computed: {
+    // -------- Tahun: opsi select (tahun saat ini, -1, -2 + tahun yang ada di data) --------
+    tahunOptions() {
+      var now = String(new Date().getFullYear());
+      var set = {};
+      set[now] = 1;
+      set[String(Number(now) - 1)] = 1;
+      set[String(Number(now) - 2)] = 1;
+      set[String(Number(now) - 3)] = 1;
+      (this.dokumenList || []).forEach(function (r) {
+        var t = String(r.tahun || '').trim();
+        if (/^\d{4}$/.test(t)) set[t] = 1;
+      });
+      return Object.keys(set).sort().reverse();
+    },
+
     // -------- Dokumen: filter client-side (safety) --------
     filteredDokumen() {
       var f = this.dokumenFilters || {};
@@ -171,20 +188,27 @@ window.SidokumenState = {
       return labels;
     },
     chartTrenDatasets() {
-      var counts = {}, keys = [];
-      var now = new Date();
-      for (var i = 11; i >= 0; i--) {
-        var d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-        var k = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
-        keys.push(k);
-        counts[k] = 0;
+      var keys, counts;
+      if (this.trenBulanan && this.trenBulanan.keys && this.trenBulanan.keys.length) {
+        keys = this.trenBulanan.keys;
+        counts = this.trenBulanan.counts;
+      } else {
+        // Fallback: sample halaman data (kurang akurat — dipakai sampai L7 termuat)
+        counts = {}; keys = [];
+        var now = new Date();
+        for (var i = 11; i >= 0; i--) {
+          var d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+          var k = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+          keys.push(k);
+          counts[k] = 0;
+        }
+        (this.dokumenList || []).forEach(function (r) {
+          var t = r.created_at || r.tanggal || '';
+          var k2 = String(t).slice(0, 7);
+          if (counts[k2] !== undefined) counts[k2]++;
+        });
       }
-      (this.dokumenList || []).forEach(function (r) {
-        var t = r.created_at || r.tanggal || '';
-        var k = String(t).slice(0, 7);
-        if (counts[k] !== undefined) counts[k]++;
-      });
-      return [{ label: 'Upload', data: keys.map(function (k) { return counts[k]; }) }];
+      return [{ label: 'Upload', data: keys.map(function (k) { return counts[k] || 0; }) }];
     },
     chartTrenColors() { return ['#065f46']; },
     chartStatusLabels() { return ['Baru','Menunggu','Disetujui','Revisi','Ditolak']; },

@@ -1,5 +1,5 @@
 <script>
-// SIDOKUMEN - J_Api.html (v1.0.2 — REST call wrapper + state update)
+// SIDOKUMEN - J_Api.html (v1.0.3 — loadTren12Bulan)
 window.SidokumenApi = {
   methods: {
     async loadAll(silent) {
@@ -10,8 +10,34 @@ window.SidokumenApi = {
         this.loadDokumen(1, s),
         this.loadJenis(),
         this.loadRtl(1, s),
-        this.loadRekapKlasifikasi(s)
+        this.loadRekapKlasifikasi(s),
+        this.loadTren12Bulan()
       ]);
+    },
+
+    // Tren 12 bulan — dua pemanggilan L7 (tahun ini + tahun lalu) agar
+    // akurat lintas tahun, bukan sekadar 20 baris halaman pertama.
+    async loadTren12Bulan() {
+      try {
+        var now = new Date();
+        var resNow = await this.callServer('laporan_rekap_periode', { tahun: String(now.getFullYear()) });
+        var resPrev = await this.callServer('laporan_rekap_periode', { tahun: String(now.getFullYear() - 1) });
+        var keys = [], counts = {};
+        for (var i = 11; i >= 0; i--) {
+          var d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+          var k = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+          keys.push(k);
+          counts[k] = 0;
+        }
+        [resPrev, resNow].forEach(function (res) {
+          if (res && res.success && res.data) {
+            (res.data.rekap || []).forEach(function (r) {
+              if (counts[r.periode] !== undefined) counts[r.periode] += Number(r.jml) || 0;
+            });
+          }
+        });
+        this.trenBulanan = { keys: keys, counts: counts };
+      } catch (e) { /* silent — chart pakai fallback sample */ }
     },
 
     // ============ DASHBOARD ============

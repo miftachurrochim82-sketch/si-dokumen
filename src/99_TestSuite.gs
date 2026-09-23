@@ -1,6 +1,11 @@
-// SIDOKUMEN - 99_TestSuite.gs (v1.0.4 — 12 sheet + 91 localHandlers + 27 domain test)
+// SIDOKUMEN - 99_TestSuite.gs (v1.0.5 — 12 sheet + 91 localHandlers + 35 domain test)
 // ============================================================
 // Changelog:
+//   v1.0.5 — Tambah 8 test keamanan untuk fix v1.0.4/v1.0.8 (K2+K3):
+//            DOK.4 FSM disetujui final, DOK.5 bypass status via save_dokumen,
+//            DOK.6 self-approve, DOK.7 create atas nama orang lain,
+//            DOK.8/9 hapus dokumen orang lain/owner, R OWN ownership RTL.
+//            Aktor test baru: TEST_USER_B_ (PEG-002), TEST_VERIFIKATOR_SELF_.
 //   v1.0.4 — Tambah 7 test baru untuk field yang diperbaiki di backend v1.0.3-v1.0.7:
 //            E2 (total_with_deadline/no_deadline), E1 (total_with_dokumen/no_dokumen),
 //            A5 (lewat/pct), A6 (musnah_netto), A10 (expected), E4 (regex),
@@ -14,6 +19,9 @@
 
 var TEST_USER_ADMIN_ = { id: 'TEST-ADMIN', email: 'test.admin@trenggalekkab.go.id', role: 'admin', pegawai_id: '' };
 var TEST_USER_USER_ = { id: 'TEST-USER', email: 'test.user@trenggalekkab.go.id', role: 'user', pegawai_id: 'TEST-PEGAWAI-001' };
+// v1.0.5 — aktor tambahan untuk test keamanan K2/K3
+var TEST_USER_B_ = { id: 'TEST-USER-B', email: 'test.userb@trenggalekkab.go.id', role: 'user', pegawai_id: 'TEST-PEGAWAI-002' };
+var TEST_VERIFIKATOR_SELF_ = { id: 'TEST-VERIF', email: 'test.verif@trenggalekkab.go.id', role: 'verifikator', pegawai_id: 'TEST-PEGAWAI-001' };
 
 // CoreLib v2.3.0 — 1 known failure: test "exchange ticket with testMode" dihapus
 // karena `testMode` dihilangkan untuk keamanan. Bukan bug SIDOKUMEN.
@@ -53,7 +61,7 @@ function testDispatcherRouting() {
 }
 
 function runDomainTestsSidokumen() {
-  Logger.log('🎯 DOMAIN SIDOKUMEN v1.0.4 — 27 test');
+  Logger.log('🎯 DOMAIN SIDOKUMEN v1.0.5 — 35 test (27 base + 8 keamanan K2/K3)');
   var results=[];
 
   // ========== JENIS ==========
@@ -82,8 +90,59 @@ function runDomainTestsSidokumen() {
       var r4=verifikasiDokumen_({id:savedId, status_baru:'disetujui', catatan:'Test approve'}, TEST_USER_ADMIN_);
       _assert_(results,'DOK.3 verifikasi baru→disetujui', r4.success&&r4.data&&String(r4.data.status)==='disetujui', r4.error||'');
     }catch(e){ _assert_(results,'DOK.3',false,e.message); }
+    // v1.0.5 (K2): 'disetujui' final — transisi ke revisi harus ditolak
+    try{
+      var r4b=verifikasiDokumen_({id:savedId, status_baru:'revisi', catatan:'Test final'}, TEST_USER_ADMIN_);
+      _assert_(results,'DOK.4 FSM: disetujui→revisi DITOLAK (final)', r4b.success===false, 'Expected reject: '+JSON.stringify(r4b));
+    }catch(e){ _assert_(results,'DOK.4 FSM',false,e.message); }
     try{ softDeleteRecord_('T_DOKUMEN', savedId, TEST_USER_USER_); }catch(e){}
   }
+
+  // ========== KEAMANAN (v1.0.5) — K2 status & self-approve, K3 ownership ==========
+  // K2: non-verifikator submit status 'disetujui' via save_dokumen → dipaksa 'baru'
+  var secId='';
+  try{
+    var jsec=saveGeneric_('M_JENIS_DOKUMEN',{record:{kode:'SEC-'+Date.now(), nama:'Jenis Security Test', kategori:'LAINNYA', periode:'Fleksibel', urutan:98, status_aktif:'true'}}, TEST_USER_ADMIN_);
+    var jsecId=jsec.success?jsec.data.id:'';
+    var r5=saveDokumen_({record:{pegawai_id:'TEST-PEGAWAI-001', jenis_dokumen_id:jsecId, tahun:'2026', judul:'Test Bypass Status '+Date.now(), status:'disetujui', file_drive_id:'dummy-drive-id', file_name:'test.pdf', file_size:1234, file_mime:'application/pdf'}}, TEST_USER_USER_);
+    _assert_(results,'DOK.5 K2: user kirim status "disetujui" → tersimpan "baru"', r5.success&&r5.data&&String(r5.data.status)==='baru', r5.error||('got status: '+(r5.data&&r5.data.status)));
+    secId=r5.success?r5.data.id:'';
+    if(jsecId) softDeleteRecord_('M_JENIS_DOKUMEN', jsecId, TEST_USER_ADMIN_);
+  }catch(e){ _assert_(results,'DOK.5 K2',false,e.message); }
+
+  // K2: self-approve ditolak (verifikator = pemilik dokumen)
+  if(secId){
+    try{
+      var r6=verifikasiDokumen_({id:secId, status_baru:'disetujui', catatan:'Self approve'}, TEST_VERIFIKATOR_SELF_);
+      _assert_(results,'DOK.6 K2: self-approve DITOLAK', r6.success===false&&r6.code==='FORBIDDEN', 'Expected FORBIDDEN: '+JSON.stringify(r6));
+    }catch(e){ _assert_(results,'DOK.6 K2 self-approve',false,e.message); }
+    try{ softDeleteRecord_('T_DOKUMEN', secId, TEST_USER_USER_); }catch(e){}
+  }
+
+  // K3: create atas nama orang lain → FORBIDDEN
+  try{
+    var jsec2=saveGeneric_('M_JENIS_DOKUMEN',{record:{kode:'SEC2-'+Date.now(), nama:'Jenis Security Test 2', kategori:'LAINNYA', periode:'Fleksibel', urutan:97, status_aktif:'true'}}, TEST_USER_ADMIN_);
+    var r7=saveDokumen_({record:{pegawai_id:'TEST-PEGAWAI-002', jenis_dokumen_id:(jsec2.success?jsec2.data.id:''), tahun:'2026', judul:'Test IDOR Create '+Date.now(), status:'baru', file_drive_id:'dummy-drive-id', file_name:'test.pdf', file_size:1234, file_mime:'application/pdf'}}, TEST_USER_USER_);
+    _assert_(results,'DOK.7 K3: create atas nama orang lain DITOLAK', r7.success===false&&r7.code==='FORBIDDEN', 'Expected FORBIDDEN: '+JSON.stringify(r7));
+    if(jsec2.success) softDeleteRecord_('M_JENIS_DOKUMEN', jsec2.data.id, TEST_USER_ADMIN_);
+  }catch(e){ _assert_(results,'DOK.7 K3',false,e.message); }
+
+  // K3: hapus dokumen orang lain → FORBIDDEN; owner → LOLOS
+  var idorId='';
+  try{
+    var jsec3=saveGeneric_('M_JENIS_DOKUMEN',{record:{kode:'SEC3-'+Date.now(), nama:'Jenis Security Test 3', kategori:'LAINNYA', periode:'Fleksibel', urutan:96, status_aktif:'true'}}, TEST_USER_ADMIN_);
+    var r8=saveDokumen_({record:{pegawai_id:'TEST-PEGAWAI-001', jenis_dokumen_id:(jsec3.success?jsec3.data.id:''), tahun:'2026', judul:'Test IDOR Delete '+Date.now(), status:'baru', file_drive_id:'dummy-drive-id', file_name:'test.pdf', file_size:1234, file_mime:'application/pdf'}}, TEST_USER_USER_);
+    idorId=r8.success?r8.data.id:'';
+    if(idorId){
+      var r9=deleteDokumen_({id:idorId}, TEST_USER_B_);
+      _assert_(results,'DOK.8 K3: hapus dokumen orang lain DITOLAK', r9.success===false&&r9.code==='FORBIDDEN', 'Expected FORBIDDEN: '+JSON.stringify(r9));
+      var r10=deleteDokumen_({id:idorId}, TEST_USER_USER_);
+      _assert_(results,'DOK.9 K3: owner hapus dokumen sendiri LOLOS', r10.success===true, r10.error||'');
+    } else {
+      _assert_(results,'DOK.8/9 K3 setup', false, 'Gagal buat dokumen: '+JSON.stringify(r8));
+    }
+    if(jsec3.success) softDeleteRecord_('M_JENIS_DOKUMEN', jsec3.data.id, TEST_USER_ADMIN_);
+  }catch(e){ _assert_(results,'DOK.8/9 K3',false,e.message); }
 
   // ========== LAPORAN ==========
   try{ var r=lapRekapKlasifikasi_({tahun:'2026'}); _assert_(results,'L4 rekap jenis shape', r.success&&r.data&&Array.isArray(r.data.rekap), r.error||''); }catch(e){ _assert_(results,'L4',false,e.message); }
@@ -181,6 +240,27 @@ function runDomainTestsSidokumen() {
       _assert_(results, 'R FSM: setup RTL', false, 'Gagal buat RTL test');
     }
   } catch (e) { _assert_(results, 'R FSM', false, e.message); }
+
+  // v1.0.5 (K3): ownership RTL — non-owner ditolak, owner lolos
+  try {
+    var rtl2 = saveRecord_('T_TINDAK_LANJUT', {
+      sumber_evaluasi: 'manual',
+      judul_rtl: 'Uji RTL Ownership ' + Date.now(),
+      deskripsi: 'Test ownership guard (K3)',
+      assigned_to: 'TEST-PEGAWAI-002',
+      status_rtl: 'baru',
+      progress_pct: 0
+    }, TEST_USER_ADMIN_);
+    if (rtl2 && rtl2.id) {
+      var rBad = ubahStatusTindakLanjut_({ id: rtl2.id, status_rtl: 'diproses' }, TEST_USER_USER_);
+      _assert_(results, 'R OWN: user non-owner ubah status RTL DITOLAK', rBad.success === false && rBad.code === 'FORBIDDEN', 'Expected FORBIDDEN: ' + JSON.stringify(rBad));
+      var rOwn = ubahStatusTindakLanjut_({ id: rtl2.id, status_rtl: 'diproses' }, TEST_USER_B_);
+      _assert_(results, 'R OWN: owner ubah status RTL LOLOS (baru→diproses)', rOwn.success === true, rOwn.error || '');
+      try { softDeleteRecord_('T_TINDAK_LANJUT', rtl2.id, TEST_USER_ADMIN_); } catch (e) {}
+    } else {
+      _assert_(results, 'R OWN: setup RTL', false, 'Gagal buat RTL test');
+    }
+  } catch (e) { _assert_(results, 'R OWN', false, e.message); }
 
   // ========== SCHEMA ==========
   try{

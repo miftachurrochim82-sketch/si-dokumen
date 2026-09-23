@@ -1,9 +1,12 @@
-// SIDOKUMEN - 17_RtlApi.gs (v1.0.7 — R1-R5 + state machine)
+// SIDOKUMEN - 17_RtlApi.gs (v1.0.8 — R1-R5 + state machine + guard kepemilikan)
 // ============================================================
 // RTL: R1 Lengkapi Dokumen, R2 Perbaiki Format, R3 Verifikasi Tertunda,
 //      R4 Arsipkan Dokumen Lama, R5 Pembinaan Pegawai
 //
 // Changelog:
+//   v1.0.8 — K3 (keamanan): guard ownership assertOwnerOrAdmin_(assigned_to)
+//            di saveTindakLanjut_ (update) & ubahStatusTindakLanjut_;
+//            create manual auto-fill assigned_to = pembuat (RLS create).
 //   v1.0.7 — 
 //     - saveTindakLanjut_: BLOKIR update status_rtl langsung (harus via
 //       ubah_status_tindak_lanjut untuk patuhi state machine).
@@ -97,6 +100,11 @@ function saveTindakLanjut_(params, actor) {
     var old = findRecordById_('T_TINDAK_LANJUT', rec.id);
     if (!old) return { success: false, code: 'NOT_FOUND', error: 'RTL tidak ditemukan.' };
 
+    // v1.0.8 (K3): hanya owner (assigned_to) atau admin yang boleh edit RTL
+    if (!assertOwnerOrAdmin_(actor, old, 'assigned_to')) {
+      return { success: false, code: 'FORBIDDEN', error: 'Anda hanya bisa mengubah RTL yang ditugaskan kepada Anda.' };
+    }
+
     // Blokir perubahan status_rtl via save — harus pakai ubah_status_tindak_lanjut
     if (rec.status_rtl && String(rec.status_rtl).toLowerCase() !== String(old.status_rtl || 'baru').toLowerCase()) {
       return { success: false, code: 'BAD_REQUEST', error: 'Ubah status_rtl via save_tindak_lanjut tidak diizinkan. Gunakan ubah_status_tindak_lanjut.' };
@@ -112,6 +120,11 @@ function saveTindakLanjut_(params, actor) {
     if (!rec.sumber_evaluasi) rec.sumber_evaluasi = 'manual';
     if (!rec.status_rtl) rec.status_rtl = 'baru';
     if (!rec.progress_pct) rec.progress_pct = 0;
+    // v1.0.8 (K3): default owner = pembuat (konsisten CoreLib RLS create),
+    // agar pembuat manual bisa mengubah status RTL-nya sendiri
+    if (!rec.assigned_to && actor && (actor.pegawai_id || actor.id)) {
+      rec.assigned_to = actor.pegawai_id || actor.id;
+    }
   }
 
   // Validate progress_pct range
@@ -159,6 +172,11 @@ function ubahStatusTindakLanjut_(params, actor) {
 
   var old = findRecordById_('T_TINDAK_LANJUT', id);
   if (!old) return { success: false, code: 'NOT_FOUND', error: 'RTL tidak ditemukan.' };
+
+  // v1.0.8 (K3): hanya owner (assigned_to) atau admin yang boleh ubah status RTL
+  if (!assertOwnerOrAdmin_(actor, old, 'assigned_to')) {
+    return { success: false, code: 'FORBIDDEN', error: 'Anda hanya bisa mengubah status RTL yang ditugaskan kepada Anda.' };
+  }
 
   var oldStatus = String(old.status_rtl || 'baru').toLowerCase().trim();
   var newStatus = String(statusBaru).toLowerCase().trim();

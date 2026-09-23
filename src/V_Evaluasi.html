@@ -1,4 +1,4 @@
-<!-- SIDOKUMEN - V_Evaluasi.html (v1.0.2 — E1-E8 sinkron backend) -->
+<!-- SIDOKUMEN - V_Evaluasi.html (v1.0.3 — fix subtext literal E7, nama pegawai/jenis di E3/E6, filter tahun select) -->
 <section v-if="currentPage === 'evaluasi'" class="space-y-6 animate-fade-in">
   <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-3">
     <div>
@@ -25,7 +25,7 @@
   <div class="card space-y-4">
     <div class="filter-bar-analytics">
       <h3 class="font-bold mr-auto"><i class="fa-solid fa-calendar text-emerald-500"></i> Periode Evaluasi</h3>
-      <div class="w-28"><label class="filter-label">Tahun</label><input type="text" class="input w-full" v-model="evaluasiTahun"></div>
+      <div class="w-28"><label class="filter-label">Tahun</label><select class="input w-full" v-model="evaluasiTahun"><option v-for="y in tahunOptions" :key="y" :value="y">{{ y }}</option></select></div>
       <button class="btn btn-primary" @click="loadEvaluasi()"><i class="fa-solid fa-rotate"></i> Tampilkan</button>
     </div>
 
@@ -60,7 +60,7 @@
           <thead class="border-b"><tr><th class="text-left py-2 px-2 min-w-[200px]">Dokumen</th><th class="text-left py-2 px-2 min-w-[240px]">Issues</th></tr></thead>
           <tbody class="divide-y">
             <tr v-for="r in (evaluasiKelengkapanData.rincian||[])" :key="r.id">
-              <td class="py-2 px-2">{{ r.id }} • {{ r.pegawai_id }} • {{ r.jenis_dokumen_id }}</td>
+              <td class="py-2 px-2"><span class="font-mono text-[11px]">{{ r.id }}</span> • {{ namaPegawai_(r.pegawai_id) }} • {{ namaJenisDokumen_(r.jenis_dokumen_id) }}</td>
               <td class="py-2 px-2 text-rose-600">{{ (r.issues||[]).join(', ') }}</td>
             </tr>
           </tbody>
@@ -122,9 +122,9 @@
           <thead class="border-b"><tr><th class="text-left py-2 px-2 min-w-[140px]">ID Dokumen</th><th class="text-left py-2 px-2 min-w-[140px]">Pegawai</th><th class="text-left py-2 px-2 min-w-[140px]">Jenis</th><th class="text-right py-2 px-2 min-w-[80px]">Tahun</th></tr></thead>
           <tbody class="divide-y">
             <tr v-for="r in (evaluasiKadaluarsaData.list||[])" :key="r.id">
-              <td class="py-2 px-2">{{ r.id }}</td>
-              <td class="py-2 px-2">{{ r.pegawai_id }}</td>
-              <td class="py-2 px-2">{{ r.jenis_dokumen_id }}</td>
+              <td class="py-2 px-2 font-mono text-[11px]">{{ r.id }}</td>
+              <td class="py-2 px-2">{{ namaPegawai_(r.pegawai_id) }}</td>
+              <td class="py-2 px-2">{{ namaJenisDokumen_(r.jenis_dokumen_id) }}</td>
               <td class="py-2 px-2 text-right">{{ r.tahun }}</td>
             </tr>
           </tbody>
@@ -136,8 +136,8 @@
     <div v-if="!evaluasiLoading && evaluasiTab==='fisik' && evaluasiFisikData" class="space-y-3">
       <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
         <app-stat-card title="Total" :value="evaluasiFisikData.total" icon="fa-solid fa-file-lines" color="emerald" :subtext="evaluasiFisikData.tahun"></app-stat-card>
-        <app-stat-card title="Ada Lokasi" :value="evaluasiFisikData.ada_lokasi||0" icon="fa-solid fa-box" color="sky" :subtext="(evaluasiFisikData.pct_ada||0) + '%'"></app-stat-card>
-        <app-stat-card title="Tanpa Lokasi" :value="evaluasiFisikData.tanpa_lokasi||0" icon="fa-solid fa-box-open" color="amber" :subtext="(evaluasiFisikData.pct_tanpa||0) + '%'"></app-stat-card>
+        <app-stat-card title="Ada Lokasi" :value="evaluasiFisikData.ada_lokasi||0" icon="fa-solid fa-box" color="sky" :subtext="(evaluasiFisikData.pct_ada||0) + '%'></app-stat-card>
+        <app-stat-card title="Tanpa Lokasi" :value="evaluasiFisikData.tanpa_lokasi||0" icon="fa-solid fa-box-open" color="amber" :subtext="(evaluasiFisikData.pct_tanpa||0) + '%'></app-stat-card>
         <app-stat-card title="Coverage" :value="(evaluasiFisikData.pct_ada||0) + '%'" icon="fa-solid fa-percent" color="purple" subtext="lokasi terdata"></app-stat-card>
       </div>
       <p class="text-[11px] text-slate-400">{{ evaluasiFisikData.note }}</p>

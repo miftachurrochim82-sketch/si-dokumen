@@ -1,4 +1,4 @@
-<!-- SIDOKUMEN - V_Modals.html (v1.0.2 — role-guard pegawai + rapi) -->
+<!-- SIDOKUMEN - V_Modals.html (v1.0.3 — formatBytes_ ukuran file) -->
 
 <!-- Modal Form Dokumen -->
 <app-modal v-if="showDokumenForm" @close="showDokumenForm=false" :title="dokumenForm.id ? 'Ubah Dokumen' : 'Upload Dokumen'" subtitle="PDF ≤10MB — ada jejak uploaded_by" icon="fa-solid fa-file-arrow-up" size="2xl" :loading="dokumenSaving" confirm-text="Simpan" cancel-text="Batal" @confirm="simpanDokumen()">
@@ -39,7 +39,7 @@
       <label class="form-label">File PDF * (≤10MB)</label>
       <input type="file" ref="fileDokumen" accept="application/pdf" class="input w-full">
       <p v-if="dokumenForm.file_name" class="text-[11px] text-slate-500 mt-1">
-        File lama: {{ dokumenForm.file_name }} ({{ dokumenForm.file_size }} bytes)
+        File lama: {{ dokumenForm.file_name }} ({{ formatBytes_(dokumenForm.file_size) }})
         <a v-if="dokumenForm.file_drive_id" :href="'https://drive.google.com/file/d/' + dokumenForm.file_drive_id + '/view'" target="_blank" class="text-emerald-600 underline ml-1">Lihat Drive</a>
       </p>
     </div>

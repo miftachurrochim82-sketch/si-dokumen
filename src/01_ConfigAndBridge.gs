@@ -1,10 +1,12 @@
 // ============================================================
-// SIDOKUMEN - 01_ConfigAndBridge.gs (v1.0.3 — 12 sheet + 93 handler + Drive + UIUX v1.10)
+// SIDOKUMEN - 01_ConfigAndBridge.gs (v1.0.4 — 12 sheet + 93 handler + Drive + UIUX v1.10)
 // ============================================================
 // Bridge ke CoreLib v2.3.0 pin 15 + kontrak dispatcher v2.
 // 12 sheet = 11 domain + 1 KONFIGURASI (key-value store).
 //
 // Changelog:
+//   v1.0.4 — K2 (keamanan): localPreSaveHook_ mengunci status T_DOKUMEN untuk
+//            non-verifikator saat update (status hanya via verifikasi_dokumen).
 //   v1.0.3 — T_DOKUMEN + lokasi_fisik/kondisi_fisik; generate_tindak_lanjut→verifikator;
 //            header version sync.
 //   v1.0.2 — 12 sheet (KONFIGURASI), 93 actionLevels, isRefSheet_ SIMPEG-only, pkFields.KONFIGURASI=key.
@@ -274,6 +276,13 @@ function localPreSaveHook_(canonical, record, actor) {
     if (!isVerifikator && C === 'T_APPROVAL') {
       var old = findRecordById_(canonical, record.id);
       record.status = old ? (old.status || 'menunggu') : 'menunggu';
+    }
+    // v1.0.3 (K2): non-verifikator tidak bisa ubah status T_DOKUMEN saat update —
+    // status hanya berubah via verifikasi_dokumen (FSM + anti self-approve).
+    // Pertahanan ganda dengan guard di saveDokumen_ (02_AppLogic).
+    if (!isVerifikator && C === 'T_DOKUMEN' && record.id) {
+      var oldDoc = findRecordById_(canonical, record.id);
+      record.status = oldDoc ? (oldDoc.status || 'baru') : 'baru';
     }
   }
 

@@ -1,4 +1,4 @@
-<!-- SIDOKUMEN - V_Rtl.html (v1.0.2 — clamp progress, rapi) -->
+<!-- SIDOKUMEN - V_Rtl.html (v1.0.3 — field status keluar form (hanya via Ubah Status + FSM), filter tahun select) -->
 <section v-if="currentPage === 'rtl'" class="space-y-6 animate-fade-in">
   <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-3">
     <div>
@@ -26,7 +26,7 @@
           <option value="E5">E5 → R5 Pembinaan</option>
         </select>
       </div>
-      <div class="w-28"><label class="filter-label">Tahun</label><input type="text" class="input w-full" v-model="rtlGenerateTahun" placeholder="2026"></div>
+      <div class="w-28"><label class="filter-label">Tahun</label><select class="input w-full" v-model="rtlGenerateTahun"><option v-for="y in tahunOptions" :key="y" :value="y">{{ y }}</option></select></div>
       <button class="btn btn-primary" @click="generateRtl()" :disabled="rtlGenerating">
         <i class="fa-solid fa-bolt" v-if="!rtlGenerating"></i>
         <i class="fa-solid fa-spinner fa-spin" v-else></i>
@@ -58,7 +58,7 @@
         <option value="manual">Manual</option>
       </select>
     </div>
-    <div class="w-24"><label class="filter-label">Tahun</label><input type="text" class="input w-full" placeholder="2026" v-model="rtlFilters.tahun" @change="loadRtl(1)"></div>
+    <div class="w-24"><label class="filter-label">Tahun</label><select class="input w-full" v-model="rtlFilters.tahun" @change="loadRtl(1)"><option v-for="y in tahunOptions" :key="y" :value="y">{{ y }}</option></select></div>
   </div>
 
   <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
@@ -116,7 +116,7 @@
   </div>
 
   <!-- Modal Form RTL -->
-  <app-modal v-if="showRtlForm" @close="showRtlForm=false" :title="rtlForm.id ? 'Ubah RTL' : 'RTL Baru'" subtitle="R1-R5" icon="fa-solid fa-list-check" size="lg" :loading="rtlSaving" confirm-text="Simpan" cancel-text="Batal" @confirm="simpanRtl()">
+  <app-modal v-if="showRtlForm" @close="showRtlForm=false" :title="rtlForm.id ? 'Ubah RTL' : 'RTL Baru'" subtitle="R1-R5 — status hanya lewat tombol 'Ubah Status' (state machine)" icon="fa-solid fa-list-check" size="lg" :loading="rtlSaving" confirm-text="Simpan" cancel-text="Batal" @confirm="simpanRtl()">
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div><label class="form-label">Sumber Evaluasi</label>
         <select class="input w-full" v-model="rtlForm.sumber_evaluasi">
@@ -126,14 +126,6 @@
           <option value="E1">E1 SLA Verif</option>
           <option value="E6">E6 Kadaluarsa</option>
           <option value="E5">E5 Kepatuhan</option>
-        </select>
-      </div>
-      <div><label class="form-label">Status</label>
-        <select class="input w-full" v-model="rtlForm.status_rtl">
-          <option value="baru">Baru</option>
-          <option value="diproses">Diproses</option>
-          <option value="selesai">Selesai</option>
-          <option value="batal">Batal</option>
         </select>
       </div>
       <div class="md:col-span-2"><label class="form-label">Judul RTL *</label><input class="input w-full" v-model.trim="rtlForm.judul_rtl" placeholder="R1 Lengkapi dokumen..."></div>

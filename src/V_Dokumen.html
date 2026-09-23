@@ -1,4 +1,4 @@
-<!-- SIDOKUMEN - V_Dokumen.html (v1.0.2 — pagination server-side tunggal) -->
+<!-- SIDOKUMEN - V_Dokumen.html (v1.0.3 — filter tahun select, v-can verifikator) -->
 <section v-if="currentPage === 'dokumen'" class="space-y-4 animate-fade-in">
   <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-3">
     <div>
@@ -14,7 +14,7 @@
 
   <div class="filter-bar-analytics">
     <div class="flex-1 w-full"><label class="filter-label">Cari</label><input type="text" class="input w-full" placeholder="Cari judul, file, catatan..." v-model="dokumenFilters.search" @input="debouncedLoadDokumen()"></div>
-    <div class="w-28"><label class="filter-label">Tahun</label><input type="text" class="input w-full" placeholder="2026" v-model="dokumenFilters.tahun" @change="loadDokumen(1)"></div>
+    <div class="w-28"><label class="filter-label">Tahun</label><select class="input w-full" v-model="dokumenFilters.tahun" @change="loadDokumen(1)"><option v-for="y in tahunOptions" :key="y" :value="y">{{ y }}</option></select></div>
     <div class="w-40"><label class="filter-label">Jenis</label>
       <select class="input w-full" v-model="dokumenFilters.jenis_dokumen_id" @change="loadDokumen(1)">
         <option value="">Semua Jenis</option>
@@ -58,7 +58,8 @@
               <div class="flex gap-1 justify-end">
                 <a v-if="r.file_drive_id" :href="'https://drive.google.com/file/d/' + r.file_drive_id + '/view'" target="_blank" class="btn-icon" title="Lihat Drive"><i class="fa-solid fa-eye"></i></a>
                 <button class="btn-icon" @click="openDokumenEdit(r)" title="Edit"><i class="fa-solid fa-pen"></i></button>
-                <button class="btn-icon" @click="openDokumenStatus(r)" title="Verifikasi"><i class="fa-solid fa-check"></i></button>
+                <!-- v-can: hanya verifikator+ (mirip level backend; role tak dikenal = disembunyikan) -->
+                <button v-can="'verifikator'" class="btn-icon" @click="openDokumenStatus(r)" title="Verifikasi"><i class="fa-solid fa-check"></i></button>
                 <button class="btn-icon-danger" @click="hapusDokumen(r)" title="Hapus"><i class="fa-solid fa-trash"></i></button>
               </div>
             </td>
