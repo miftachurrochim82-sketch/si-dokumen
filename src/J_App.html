@@ -1,6 +1,8 @@
 <script>
 // SIDOKUMEN - J_App.html (v1.0.3 — icon menu laporan beda dari dokumen)
 var SidokumenMixin = {
+  // Scope helper — mine/all via AppCore
+  // getMyScope/setMyScope akan di-override oleh AppCore.create instance
   data: function () { return Object.assign({}, window.SidokumenState.data()); },
   computed: Object.assign({}, window.SidokumenState.computed),
   methods: Object.assign({},
@@ -9,6 +11,10 @@ var SidokumenMixin = {
     window.SidokumenActions.methods
   )
 };
+
+// Scope global helper (fallback bila AppCore belum load)
+window.getMyScope = function(){ try{ return window.AppCore ? AppCore.getMyScope() : 'all'; }catch(e){ return 'all'; } };
+window.setMyScope = function(v){ try{ if(window.AppCore) AppCore.setMyScope(v); else localStorage.setItem('sidokumen_scope', v); }catch(e){} };
 
 var app = AppCore.create({
   appCode: 'SIDOKUMEN',
@@ -36,6 +42,9 @@ var app = AppCore.create({
     ]},
     { name: 'Master', items: [
       { id: 'master', label: 'Jenis Dokumen', icon: 'fa-solid fa-tags' }
+    ]},
+    { name: 'Sistem', items: [
+      { id: 'pengaturan', label: 'Pengaturan', icon: 'fa-solid fa-gear' }
     ]}
   ],
   pageIcons: {

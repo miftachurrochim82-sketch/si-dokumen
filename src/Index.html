@@ -21,6 +21,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.2/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/vue@3.5.42/dist/vue.global.prod.js"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/miftachurrochim82-sketch/frontend-cdn@v2.9.1/frontend/app-common.min.css">
+  <?!= getThemeCss() ?>
   <style>
     :root {
       --primary:#065f46; --primary-dark:#064e3b; --primary-light:#ecfdf5;
@@ -65,6 +66,7 @@
           <?!= include('V_Evaluasi'); ?>
           <?!= include('V_Rtl'); ?>
           <?!= include('V_Master'); ?>
+          <?!= include('V_Pengaturan'); ?>
         </main>
       </div>
     </div>

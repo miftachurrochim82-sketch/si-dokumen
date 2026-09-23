@@ -1,5 +1,6 @@
 <!-- SIDOKUMEN - V_Dokumen.html (v1.0.3 — filter tahun select, v-can verifikator) -->
 <section v-if="currentPage === 'dokumen'" class="space-y-4 animate-fade-in">
+  <div class="flex items-center gap-2 text-xs mb-2"><span>Scope:</span><button class="btn btn-xs" :class="getMyScope()==='mine'?'btn-primary':'btn-ghost'" @click="setMyScope('mine')">Saya</button><button class="btn btn-xs" :class="getMyScope()==='all'?'btn-primary':'btn-ghost'" @click="setMyScope('all')">Semua</button></div>
   <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-3">
     <div>
       <h2 class="text-2xl font-bold tracking-tight flex items-center gap-2 text-slate-800 dark:text-white">

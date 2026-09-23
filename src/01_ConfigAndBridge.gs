@@ -1,7 +1,7 @@
 // ============================================================
-// SIDOKUMEN - 01_ConfigAndBridge.gs (v1.0.4 — 12 sheet + 93 handler + Drive + UIUX v1.10)
+// SIDOKUMEN - 01_ConfigAndBridge.gs (v1.8.0 — 12 sheet + 93 handler + scope Saya/Semua + tema dinamis + periode)
 // ============================================================
-// Bridge ke CoreLib v2.3.0 pin 17 + kontrak dispatcher v2.
+// Bridge ke CoreLib v2.4.0 pin 17 + kontrak dispatcher v2 + CDN v2.9.1 (1 CSS+9 JS).
 // 12 sheet = 11 domain + 1 KONFIGURASI (key-value store).
 //
 // Changelog:
@@ -26,6 +26,48 @@ var SESSION_PREFIX      = 'APP_SESSION_' + APP_CODE + '_';
 var SESSION_TTL_SECONDS = 6 * 60 * 60;
 var DATA_CACHE_TTL      = 300;
 var ROLE_LEVELS = CoreLib.MASTER_ROLE_LEVELS;
+
+// ==================== §1b TEMA PER-APP (CoreLib v2.4.0 C8) ====================
+var DEFAULT_THEME = { primary: '#065f46', preset: 'emerald' };
+function getThemeConfig_() {
+  try { return CoreLib.getThemeConfig(appProps_(), DEFAULT_THEME); }
+  catch (e) { return DEFAULT_THEME; }
+}
+function getThemeCss() {
+  try { return CoreLib.getThemeCss(appProps_(), DEFAULT_THEME); }
+  catch (e) { return ':root{--primary:#065f46}'; }
+}
+
+// ==================== §1c SCOPE "SAYA" ====================
+var SCOPE_OWNER_FIELD = 'pegawai_id';
+function filterByScope_(rows, scope, session) {
+  if (scope === 'mine' && session && session.pegawai_id) {
+    return rows.filter(function(r){ return String(r[SCOPE_OWNER_FIELD]||'') === String(session.pegawai_id); });
+  }
+  return rows;
+}
+
+// ==================== §1d WORKFLOW & PERIODE (CoreLib v2.4.0) ====================
+var STATUS_MAP = {
+  'T_DOKUMEN': {
+    'baru':      ['diajukan', 'arsip'],
+    'diajukan':  ['disetujui', 'ditolak', 'direvisi'],
+    'direvisi':  ['baru', 'arsip'],
+    'disetujui': ['arsip'],
+    'ditolak':   ['baru', 'arsip'],
+    'arsip':     []
+  },
+  'T_TINDAK_LANJUT': {
+    'baru':     ['proses', 'batal'],
+    'proses':   ['selesai', 'tertunda'],
+    'tertunda': ['proses', 'batal'],
+    'selesai':  [],
+    'batal':    []
+  }
+};
+function periodeBulan_(tanggalStr){ try{ return CoreLib.periodeBulan(tanggalStr); }catch(e){ return ''; } }
+function dalamPeriode_(tgl, start, end){ try{ return CoreLib.dalamPeriode(tgl, start, end); }catch(e){ return false; } }
+function hitungHariKerja_(start, end){ try{ return CoreLib.hitungHariKerja(start, end); }catch(e){ return 0; } }
 
 // ==================== §2 PROPERTIES & SPREADSHEET ====================
 function appProps_() { return PropertiesService.getScriptProperties(); }
@@ -364,10 +406,25 @@ function getAppConfig_() {
       'save_tindak_lanjut': 'user', 'rtl_save': 'user', 'delete_tindak_lanjut': 'admin', 'rtl_delete': 'admin',
       'ubah_status_tindak_lanjut': 'user', 'rtl_ubah_status': 'user', 'generate_tindak_lanjut': 'verifikator', 'rtl_generate': 'verifikator',
       // Generic + publik + sistem
-      'save': 'admin', 'delete': 'admin', 'ping': 'viewer', 'exchange_platform_ticket': 'viewer', 'logout': 'viewer', 'init_database': 'super'
+      'save': 'admin', 'delete': 'admin', 'get_theme': 'viewer', 'save_theme': 'admin', 'ping': 'viewer', 'exchange_platform_ticket': 'viewer', 'logout': 'viewer', 'init_database': 'super'
     },
+    resources: {
+      'T_DOKUMEN': { ownerField: 'pegawai_id' },
+      'T_TINDAK_LANJUT': { ownerField: 'assigned_to' }
+    },
+    statusMap: STATUS_MAP,
     entityPermissions: {},
-    localHandlers: {}
+    localHandlers: {
+      'get_theme': function(payload, ctx){ return { success:true, data: getThemeConfig_() }; },
+      'save_theme': function(payload, ctx){
+        if (!ctx || !ctx.session) throw new Error('Unauthorized');
+        CoreLib.checkRole_(ctx.session.role, 'admin');
+        var cfg = payload && (payload.theme || payload.data || payload);
+        if (!cfg || !cfg.primary) throw new Error('Tema tidak valid');
+        PropertiesService.getScriptProperties().setProperty('THEME_JSON', JSON.stringify(cfg));
+        return { success:true, data: cfg, css: getThemeCss() };
+      }
+    }
   };
 }
 
